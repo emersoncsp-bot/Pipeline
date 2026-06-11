@@ -43,7 +43,7 @@ const DEPT_DEFAULT_STAGES = {
 };
 
 const DEFAULT_USERS = [
-  { id:"u1", email:"qualidade.tecnica@empresa.com", password:"123456", name:"Ana Paula Silva",  dept:"CQ Área Técnica",       allowedStages:[1,4],     active:true },
+  { id:"u1", email:"qualidade.tecnica@empresa.com", password:"123456", name:"Emerson Santos",  dept:"CQ Área Técnica",       allowedStages:[1,4],     active:true },
   { id:"u2", email:"qualidade.lib@empresa.com",     password:"123456", name:"Carlos Mendes",    dept:"CQ Lib. Intermediária", allowedStages:[5,7,8],   active:true },
   { id:"u3", email:"planejamento.uap@empresa.com",  password:"123456", name:"Fernanda Rocha",   dept:"Planejamento UAP",      allowedStages:[2,6],     active:true },
   { id:"u4", email:"planejamento.central@empresa.com",password:"123456",name:"Ricardo Alves",   dept:"Planejamento Central",  allowedStages:[3],       active:true },
