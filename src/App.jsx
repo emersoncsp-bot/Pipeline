@@ -55,7 +55,7 @@ const ALL_COLS = ["pedido","item","material","descricao","data_bloqueio","ultima
 const COL_LABELS = {
   pedido:"Pedido", item:"Item", material:"Material", descricao:"Descrição", data_bloqueio:"Data Bloqueio",
   ultima_ordem:"Última Ordem", lote:"Lote", ippn:"IPPN", qualidade_qts:"Qualidade QTS",
-  deposito_sap:"Depósito SAP", motivo_bloqueio:"Motivo Bloqueio", motivo_bloqueio_texto:"Motivo Bloqueio Texto",
+  deposito_sap:"Depósito SAP", motivo_bloqueio:"Motivo de Bloqueio", motivo_bloqueio_texto:"Motivo Bloqueio Texto",
   razao_bloq:"Razão Bloq.", num_cassete:"Nº Cassete",
 };
 
