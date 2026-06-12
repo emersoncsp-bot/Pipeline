@@ -76,6 +76,8 @@ const FONT = "-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','S
 const SPRING = "cubic-bezier(0.34, 1.45, 0.55, 1)";
 const EASE = "cubic-bezier(0.25, 0.1, 0.25, 1)";
 const ACCENT = "#0A84FF";          // iOS systemBlue
+// Display/large-title typeface — rounded SF Pro for a softer, "Apple report" feel
+const TITLE_FONT = "'SF Pro Rounded', ui-rounded, -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Helvetica, Arial, sans-serif";
 const SIDEBAR_W = 232;
 const APP_BG = "#F2F2F4";          // systemGroupedBackground
 const SURFACE = "#FFFFFF";
@@ -167,7 +169,7 @@ function groupByLote(rows) {
       ultima_ordem:row.ultima_ordem||"",qualidade_qts:row.qualidade_qts||"",
       deposito_sap:row.deposito_sap||"",motivo_bloqueio:row.motivo_bloqueio||"",
       motivo_bloqueio_texto:row.motivo_bloqueio_texto||"",razao_bloq:row.razao_bloq||"",
-      descricao_motivo:row.descricao_motivo||"",
+      descricao_motivo:row.descricao_motivo||"",num_cassete:row.num_cassete||"",
     });
     map.get(key).rows.push(row);
   });
@@ -239,6 +241,15 @@ function renderTratativaValue(v){
   return v||"—";
 }
 
+// Convert "#RRGGBB" to "rgba(r,g,b,a)" — used for soft tinted icon badges
+function hexToRgba(hex, alpha){
+  const h = hex.replace("#","");
+  const r = parseInt(h.substring(0,2),16);
+  const g = parseInt(h.substring(2,4),16);
+  const b = parseInt(h.substring(4,6),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // GLOBAL STYLES — spring press feedback, hover lift, focus rings
 // ─────────────────────────────────────────────────────────────────────────────
@@ -291,18 +302,19 @@ const TH = {background:"#F6F6F8",padding:"10px 11px",textAlign:"left",fontWeight
 const TH_ACCENT = {...TH, background:"rgba(10,132,255,0.08)", color:ACCENT};
 const TD = (alt)=>({padding:"10px 11px",borderBottom:`1px solid ${SEPARATOR}`,verticalAlign:"middle",fontSize:13,color:"#1C1C1E",background:alt?"#FAFAFB":"#fff"});
 
-// Side-by-side history cards (one card per stage record) — used in StageView + Histórico
-function HistoryCards({history}){
+// Inline history record list — stages separated by a vertical bar "|", clean look (no cards)
+function HistoryInline({history}){
   if(!history || history.length===0) return <span style={{color:"#C7C7CC",fontSize:11}}>—</span>;
   return(
-    <div style={{display:"flex",gap:6,overflowX:"auto",paddingBottom:2,maxWidth:480}}>
+    <div style={{display:"flex",alignItems:"center",flexWrap:"wrap",gap:0,fontSize:11,lineHeight:1.6,fontFamily:FONT}}>
       {history.map((h,hi)=>(
-        <div key={hi} style={{minWidth:140,maxWidth:160,flexShrink:0,border:`1px solid ${SEPARATOR}`,borderRadius:10,padding:"7px 9px",background:"#FAFAFB"}}>
-          <div style={{fontSize:10,fontWeight:800,color:"#1C1C1E",marginBottom:4,lineHeight:1.3}}>{h.stage}. {h.stageLabel}</div>
-          <div style={{fontSize:10,color:ACCENT,fontWeight:600,marginBottom:4,lineHeight:1.3,wordBreak:"break-word"}}>{renderTratativaValue(h.tratativa)}</div>
-          <div style={{fontSize:9,color:"#3A3A3C",fontWeight:600,marginBottom:1}}>{h.user}</div>
-          <div style={{fontSize:9,color:"#C7C7CC"}}>{h.date}</div>
-        </div>
+        <span key={hi} style={{display:"inline-flex",alignItems:"baseline",whiteSpace:"nowrap"}}>
+          {hi>0&&<span style={{color:"#D1D1D6",margin:"0 10px",fontWeight:300}}>|</span>}
+          <span style={{fontWeight:700,color:"#1C1C1E"}}>{h.stage}. {h.stageLabel}:</span>
+          <span style={{color:ACCENT,fontWeight:600,marginLeft:5}}>{renderTratativaValue(h.tratativa)}</span>
+          <span style={{color:"#8E8E93",marginLeft:6}}>— {h.user}</span>
+          <span style={{color:"#C7C7CC",marginLeft:5}}>({h.date})</span>
+        </span>
       ))}
     </div>
   );
@@ -398,9 +410,10 @@ function LoginPage({onLogin,users}){
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SIDEBAR (desktop NavigationSplitView pattern)
+// SIDEBAR (desktop NavigationSplitView pattern — appears on hover, hides otherwise)
 // ─────────────────────────────────────────────────────────────────────────────
-function Sidebar({page,setPage,user,onLogoutClick}){
+function Sidebar({page,setPage}){
+  const [open,setOpen]=useState(false);
   const items=[
     {key:"dashboard",icon:LayoutGrid,label:"Dashboard"},
     {key:"pipeline",icon:GitBranch,label:"Pipeline"},
@@ -408,64 +421,77 @@ function Sidebar({page,setPage,user,onLogoutClick}){
     {key:"configuracoes",icon:Settings,label:"Configurações"},
   ];
   return(
-    <div style={{
-      width:SIDEBAR_W, flexShrink:0, height:"100vh", position:"sticky", top:0,
-      background:SIDEBAR_GLASS, backdropFilter:"blur(24px) saturate(180%)", WebkitBackdropFilter:"blur(24px) saturate(180%)",
-      borderRight:`1px solid ${SEPARATOR}`, display:"flex", flexDirection:"column",
-      padding:"18px 12px", boxSizing:"border-box", fontFamily:FONT,
-    }}>
-      <div style={{display:"flex",alignItems:"center",gap:10,padding:"4px 8px",marginBottom:24}}>
-        <div style={{width:34,height:34,borderRadius:9,background:`linear-gradient(135deg,${ACCENT},#0051D4)`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,boxShadow:"0 4px 12px rgba(10,132,255,0.3)"}}>
-          <FlaskConical size={18} color="#fff" strokeWidth={2.2}/>
-        </div>
-        <div style={{fontSize:14.5,fontWeight:800,color:"#1C1C1E",letterSpacing:"-0.2px",lineHeight:1.25}}>Fluxo de<br/>Liberação</div>
-      </div>
+    <>
+      {/* Edge hover zone — hovering near the left edge reveals the sidebar */}
+      <div onMouseEnter={()=>setOpen(true)} style={{position:"fixed",left:0,top:0,width:14,height:"100vh",zIndex:99}}/>
 
-      <nav style={{display:"flex",flexDirection:"column",gap:2}}>
-        {items.map(it=>{
-          const active=page===it.key;
-          const Icon=it.icon;
-          return(
-            <button key={it.key} className="spring-btn" onClick={()=>setPage(it.key)} style={{
-              display:"flex",alignItems:"center",gap:10,padding:"9px 12px",borderRadius:10,border:"none",
-              background:active?"rgba(10,132,255,0.12)":"transparent",
-              color:active?ACCENT:"#3A3A3C", fontSize:13.5,fontWeight:active?700:500,
-              cursor:"pointer",textAlign:"left",width:"100%",fontFamily:FONT,
-            }}>
-              <Icon size={17} strokeWidth={2.2}/>
-              {it.label}
-            </button>
-          );
-        })}
-      </nav>
-
-      <div style={{marginTop:"auto",paddingTop:14,borderTop:`1px solid ${SEPARATOR}`}}>
-        <div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 8px"}}>
-          <div style={{width:32,height:32,borderRadius:"50%",background:`linear-gradient(135deg,${ACCENT},#5AC8FA)`,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:13,fontWeight:700,flexShrink:0}}>{user.name.charAt(0)}</div>
-          <div style={{flex:1,minWidth:0}}>
-            <div style={{fontSize:12.5,fontWeight:700,color:"#1C1C1E",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{user.name}</div>
-            <div style={{fontSize:10.5,color:"#8E8E93",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{DEPT_FULL[user.dept]||user.dept}</div>
+      <div
+        onMouseEnter={()=>setOpen(true)}
+        onMouseLeave={()=>setOpen(false)}
+        style={{
+          position:"fixed", left:0, top:0, width:SIDEBAR_W, height:"100vh", zIndex:100,
+          background:SIDEBAR_GLASS, backdropFilter:"blur(24px) saturate(180%)", WebkitBackdropFilter:"blur(24px) saturate(180%)",
+          borderRight:`1px solid ${SEPARATOR}`, display:"flex", flexDirection:"column",
+          padding:"18px 12px", boxSizing:"border-box", fontFamily:FONT,
+          transform:open?"translateX(0)":"translateX(-100%)",
+          boxShadow:open?"6px 0 30px rgba(0,0,0,0.12)":"none",
+          transition:`transform 0.32s ${SPRING}, box-shadow 0.32s ${EASE}`,
+        }}
+      >
+        <div style={{display:"flex",alignItems:"center",gap:10,padding:"4px 8px",marginBottom:24}}>
+          <div style={{width:34,height:34,borderRadius:9,background:`linear-gradient(135deg,${ACCENT},#0051D4)`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,boxShadow:"0 4px 12px rgba(10,132,255,0.3)"}}>
+            <FlaskConical size={18} color="#fff" strokeWidth={2.2}/>
           </div>
-          <button className="spring-btn" onClick={onLogoutClick} title="Sair" style={{background:"none",border:"none",cursor:"pointer",color:"#8E8E93",padding:6,borderRadius:8,display:"flex"}}>
-            <LogOut size={16} strokeWidth={2.2}/>
-          </button>
+          <div style={{fontSize:15,fontWeight:800,color:"#1C1C1E",letterSpacing:"-0.3px",lineHeight:1.25,fontFamily:TITLE_FONT}}>Fluxo de<br/>Liberação</div>
         </div>
+
+        <nav style={{display:"flex",flexDirection:"column",gap:2}}>
+          {items.map(it=>{
+            const active=page===it.key;
+            const Icon=it.icon;
+            return(
+              <button key={it.key} className="spring-btn" onClick={()=>setPage(it.key)} style={{
+                display:"flex",alignItems:"center",gap:10,padding:"9px 12px",borderRadius:10,border:"none",
+                background:active?"rgba(10,132,255,0.12)":"transparent",
+                color:active?ACCENT:"#3A3A3C", fontSize:13.5,fontWeight:active?700:500,
+                cursor:"pointer",textAlign:"left",width:"100%",fontFamily:FONT,
+              }}>
+                <Icon size={17} strokeWidth={2.2}/>
+                {it.label}
+              </button>
+            );
+          })}
+        </nav>
       </div>
-    </div>
+    </>
   );
 }
 
-// Glass top bar — large title for the active page
-function TopBar({title,subtitle}){
+// Glass top bar — large title for the active page + logged-in user (top-right)
+function TopBar({title,subtitle,user,onLogoutClick}){
   return(
     <div style={{
       position:"sticky", top:0, zIndex:40,
       background:HEADER_GLASS, backdropFilter:"blur(20px) saturate(180%)", WebkitBackdropFilter:"blur(20px) saturate(180%)",
       borderBottom:`1px solid ${SEPARATOR}`, padding:"16px 28px", fontFamily:FONT,
+      display:"flex", alignItems:"center", justifyContent:"space-between", gap:16,
     }}>
-      <div style={{fontSize:24,fontWeight:800,color:"#1C1C1E",letterSpacing:"-0.4px"}}>{title}</div>
-      {subtitle&&<div style={{fontSize:12.5,color:"#8E8E93",marginTop:2}}>{subtitle}</div>}
+      <div>
+        <div style={{fontSize:26,fontWeight:800,color:"#1C1C1E",letterSpacing:"-0.5px",fontFamily:TITLE_FONT}}>{title}</div>
+        {subtitle&&<div style={{fontSize:12.5,color:"#8E8E93",marginTop:2}}>{subtitle}</div>}
+      </div>
+      <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
+        <div style={{textAlign:"right"}}>
+          <div style={{fontSize:13,fontWeight:700,color:"#1C1C1E",lineHeight:1.3}}>{user.name}</div>
+          <div style={{fontSize:11,color:"#8E8E93",lineHeight:1.3}}>{DEPT_FULL[user.dept]||user.dept}</div>
+        </div>
+        <div style={{width:34,height:34,borderRadius:"50%",background:`linear-gradient(135deg,${ACCENT},#5AC8FA)`,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:13,fontWeight:700,flexShrink:0}}>{user.name.charAt(0)}</div>
+        <button className="spring-btn" onClick={onLogoutClick} title="Sair" style={{background:"#F2F2F7",border:"none",cursor:"pointer",color:"#8E8E93",padding:8,borderRadius:9,display:"flex"}}>
+          <LogOut size={16} strokeWidth={2.2}/>
+        </button>
+      </div>
     </div>
+
   );
 }
 
@@ -553,7 +579,7 @@ function ImportStep({onImport}){
   const previewCols=["pedido","item","material","lote","ippn","deposito_sap","motivo_bloqueio","data_bloqueio"];
   return(
     <div>
-      <div style={{fontSize:19,fontWeight:800,color:"#1C1C1E",letterSpacing:"-0.3px",marginBottom:4}}>Importar Tubos Bloqueados</div>
+      <div style={{fontSize:21,fontWeight:800,color:"#1C1C1E",letterSpacing:"-0.4px",marginBottom:4,fontFamily:TITLE_FONT}}>Importar Tubos Bloqueados</div>
       <div style={{fontSize:13,color:"#8E8E93",marginBottom:20}}>Carregue um arquivo CSV, TXT ou XLS/XLSX para iniciar o fluxo na Etapa 1.</div>
       <div style={{border:`2px dashed ${drag?ACCENT:"#D1D1D6"}`,borderRadius:18,padding:"44px 24px",textAlign:"center",background:drag?"rgba(10,132,255,0.04)":"#FAFAFB",cursor:"pointer",transition:`all 0.25s ${EASE}`,marginBottom:18}} onDragOver={e=>{e.preventDefault();setDrag(true);}} onDragLeave={()=>setDrag(false)} onDrop={handleDrop} onClick={()=>!loading&&document.getElementById("fileInputImp").click()}>
         <div style={{display:"flex",justifyContent:"center",marginBottom:12}}>
@@ -652,20 +678,20 @@ function StageView({stage,rows,user,onAdvance,onReturn,onComplete}){
   // Sticky checkbox column (left-fixed)
   const stickyTh = {...TH, width:34, position:"sticky", left:0, zIndex:25};
   const stickyTd = (bg)=>({...TD(false), background:bg, textAlign:"center", position:"sticky", left:0, zIndex:5});
-  const histTh = {...TH, minWidth:320};
-  const histTd = (alt)=>({...TD(alt), minWidth:320, padding:6});
+  const histTh = {...TH, minWidth:380};
+  const histTd = (alt)=>({...TD(alt), minWidth:380, padding:"10px 14px"});
   const descTh = {...TH, minWidth:220};
   const descTd = (bg)=>({...TD(false), background:bg, minWidth:220});
 
   // total column count (for IPPN expand row colSpan)
-  const totalCols = (canInteract?1:0) /*checkbox*/ + 1 /*expand*/ + 3 /*Lote,Tubos,IPPNs*/ + 4 /*Pedido,Item,Material,Descricao*/ + 4 /*UltimaOrdem,QTS,Deposito,Motivo*/ + (stage.id>1?1:0) /*Historico*/ + 3 /*MotivoTexto,RazaoBloq,DescricaoMotivo*/ + 1 /*Definição*/;
+  const totalCols = (canInteract?1:0) /*checkbox*/ + 1 /*expand*/ + 3 /*Lote,Tubos,IPPNs*/ + 2 /*DataBloqueio,Cassete*/ + 4 /*Pedido,Item,Material,Descricao*/ + 4 /*UltimaOrdem,QTS,Deposito,Motivo*/ + 3 /*MotivoTexto,RazaoBloq,DescricaoMotivo*/ + 1 /*Definição*/ + (stage.id>1?1:0) /*Historico*/;
 
   return(
     <div>
       {/* Top bar */}
       <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:14,flexWrap:"wrap",gap:10}}>
         <div>
-          <div style={{fontSize:19,fontWeight:800,color:"#1C1C1E",letterSpacing:"-0.3px",marginBottom:6}}>{stage.label}</div>
+          <div style={{fontSize:21,fontWeight:800,color:"#1C1C1E",letterSpacing:"-0.4px",marginBottom:6,fontFamily:TITLE_FONT}}>{stage.label}</div>
           <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
             <DeptTag dept={stage.dept}/>
             <span style={{fontSize:12,color:"#8E8E93"}}>{groups.length} lote{groups.length!==1?"s":""} · {rows.length} tubo{rows.length!==1?"s":""}</span>
@@ -693,6 +719,8 @@ function StageView({stage,rows,user,onAdvance,onReturn,onComplete}){
               <th style={TH}>Lote</th>
               <th style={TH}>Tubos</th>
               <th style={TH}>IPPNs</th>
+              <th style={TH}>Data Bloqueio</th>
+              <th style={TH}>Nº Cassete</th>
               <th style={TH}>Pedido</th>
               <th style={TH}>Item</th>
               <th style={TH}>Material</th>
@@ -701,11 +729,11 @@ function StageView({stage,rows,user,onAdvance,onReturn,onComplete}){
               <th style={TH}>Qualidade QTS</th>
               <th style={TH}>Depósito SAP</th>
               <th style={TH}>Motivo Bloqueio</th>
-              {stage.id>1&&<th style={histTh}>Histórico</th>}
               <th style={TH}>Motivo Bloqueio Texto</th>
               <th style={TH}>Razão Bloq.</th>
               <th style={TH}>Descrição Motivo</th>
               <th style={TH_ACCENT}>Definição</th>
+              {stage.id>1&&<th style={histTh}>Histórico</th>}
             </tr>
           </thead>
           <tbody>
@@ -726,6 +754,8 @@ function StageView({stage,rows,user,onAdvance,onReturn,onComplete}){
                   <td style={{...TD(false),background:bg,fontWeight:700,color:"#1C1C1E"}}>{group.lote||"—"}</td>
                   <td style={{...TD(false),background:bg}}><span style={{background:"#E8F4FD",color:"#1A6FA8",borderRadius:6,padding:"2px 7px",fontSize:11,fontWeight:700}}>{group.rows.length}</span></td>
                   <td style={{...TD(false),background:bg,maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:"#555"}}>{ippnList||"—"}</td>
+                  <td style={{...TD(false),background:bg}}>{group.data_bloqueio||"—"}</td>
+                  <td style={{...TD(false),background:bg}}>{group.num_cassete||"—"}</td>
                   <td style={{...TD(false),background:bg}}>{group.pedido||"—"}</td>
                   <td style={{...TD(false),background:bg}}>{group.item||"—"}</td>
                   <td style={{...TD(false),background:bg}}>{group.material||"—"}</td>
@@ -734,7 +764,6 @@ function StageView({stage,rows,user,onAdvance,onReturn,onComplete}){
                   <td style={{...TD(false),background:bg}}>{group.qualidade_qts||"—"}</td>
                   <td style={{...TD(false),background:bg}}>{group.deposito_sap||"—"}</td>
                   <td style={{...TD(false),background:bg}}>{group.motivo_bloqueio||"—"}</td>
-                  {stage.id>1&&<td style={histTd(alt)}><HistoryCards history={fr.history}/></td>}
                   <td style={{...TD(false),background:bg}}>{group.motivo_bloqueio_texto||"—"}</td>
                   <td style={{...TD(false),background:bg}}>{group.razao_bloq||"—"}</td>
                   <td style={{...TD(false),background:bg}}>{group.descricao_motivo||"—"}</td>
@@ -745,14 +774,13 @@ function StageView({stage,rows,user,onAdvance,onReturn,onComplete}){
                       canInteract?(<input type="text" style={{border:"1.5px solid #E5E5EA",borderRadius:8,padding:"5px 9px",fontSize:11,width:"100%",outline:"none",background:"#fff",minWidth:160,fontFamily:FONT}} placeholder="Definição…" value={currentTratValue||""} onChange={e=>setTratativas(t=>({...t,[group.lote]:e.target.value}))}/>):(<span style={{fontSize:11,color:"#555"}}>{currentTratValue||"—"}</span>)
                     )}
                   </td>
+                  {stage.id>1&&<td style={histTd(alt)}><HistoryInline history={fr.history}/></td>}
                 </tr>,
-                // IPPN expanded info row
+                // IPPN expanded info row — only the IPPN itself (Cassete/Data Bloqueio are now table columns)
                 ...(isExp?group.rows.map((row,ri)=>(
                   <tr key={`exp-${row._id}`} style={{background:"rgba(10,132,255,0.04)"}}>
                     <td colSpan={totalCols} style={{padding:"8px 14px",borderBottom:`1px solid ${SEPARATOR}`,fontSize:11,color:"#555"}}>
                       <span style={{color:ACCENT,fontWeight:700}}>IPPN {ri+1}:</span> {row.ippn||"—"}
-                      &nbsp;&nbsp;|&nbsp;&nbsp;<span style={{fontWeight:600}}>Cassete:</span> {row.num_cassete||"—"}
-                      &nbsp;&nbsp;|&nbsp;&nbsp;<span style={{fontWeight:600}}>Data Bloqueio:</span> {row.data_bloqueio||"—"}
                     </td>
                   </tr>
                 )):[]),
@@ -791,26 +819,41 @@ function Dashboard({stageData,historyRows,onSelectStage}){
   const {stageAvg,deptAvg}=computeTimingStats(stageData,historyRows);
 
   const kpis=[
-    {label:"Total Bloqueado",  value:total,     color:"#FF453A"},
-    {label:"Análise Pendente", value:etapa1,    color:ACCENT,sid:1},
-    {label:"Em Fluxo",         value:inFlow,    color:"#FF9F0A"},
-    {label:"Pend. Execução",   value:pendExec,  color:"#8E8E93",sid:8},
+    {label:"Total Bloqueado",  value:total,     color:"#FF453A", icon:AlertTriangle},
+    {label:"Análise Pendente", value:etapa1,    color:ACCENT,    icon:Clock, sid:1},
+    {label:"Em Fluxo",         value:inFlow,    color:"#FF9F0A", icon:GitBranch},
+    {label:"Pend. Execução",   value:pendExec,  color:"#8E8E93", icon:CheckCircle2, sid:8},
   ];
 
   const hasTimingData=Object.keys(stageAvg).length>0||Object.keys(deptAvg).length>0;
   const cardTitle = {fontSize:13,fontWeight:700,color:"#3A3A3C",marginBottom:12};
   const card = {background:SURFACE, borderRadius:16, padding:"16px", boxShadow:"0 1px 6px rgba(0,0,0,0.04)"};
+  const now = new Date();
 
   return(
     <div style={{...WIDE,paddingTop:20}}>
+      {/* Report header */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:16,flexWrap:"wrap",gap:8}}>
+        <div style={{fontSize:16,fontWeight:800,color:"#1C1C1E",letterSpacing:"-0.3px",fontFamily:TITLE_FONT}}>Visão Geral</div>
+        <div style={{fontSize:11,color:"#8E8E93"}}>Atualizado em {now.toLocaleDateString("pt-BR")} às {now.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}</div>
+      </div>
+
       {/* KPIs */}
       <div style={{display:"flex",gap:14,marginBottom:24,flexWrap:"wrap"}}>
-        {kpis.map(k=>(
-          <div key={k.label} className="hover-lift" style={{...card,borderRadius:18,flex:1,minWidth:150,minHeight:84,borderLeft:`4px solid ${k.color}`,cursor:k.sid?"pointer":"default",display:"flex",flexDirection:"column",justifyContent:"space-between"}} onClick={()=>k.sid&&onSelectStage(k.sid)}>
-            <div style={{fontSize:10,color:"#8E8E93",fontWeight:600,marginBottom:4,textTransform:"uppercase",letterSpacing:"0.5px"}}>{k.label}</div>
-            <div style={{fontSize:34,fontWeight:900,color:k.color,letterSpacing:"-1.5px",lineHeight:1}}>{k.value}</div>
-          </div>
-        ))}
+        {kpis.map(k=>{
+          const Icon=k.icon;
+          return(
+            <div key={k.label} className="hover-lift spring-btn" style={{...card,borderRadius:18,flex:1,minWidth:170,minHeight:100,border:`1px solid ${SEPARATOR}`,cursor:k.sid?"pointer":"default",display:"flex",flexDirection:"column",justifyContent:"space-between"}} onClick={()=>k.sid&&onSelectStage(k.sid)}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                <div style={{fontSize:11,color:"#8E8E93",fontWeight:600,textTransform:"uppercase",letterSpacing:"0.5px",maxWidth:"70%"}}>{k.label}</div>
+                <div style={{width:32,height:32,borderRadius:10,background:hexToRgba(k.color,0.12),display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                  <Icon size={16} color={k.color} strokeWidth={2.4}/>
+                </div>
+              </div>
+              <div style={{fontSize:36,fontWeight:900,color:"#1C1C1E",letterSpacing:"-1.5px",lineHeight:1,fontFamily:TITLE_FONT}}>{k.value}</div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Tubos por etapa (left) + Pendências por Departamento (right) */}
@@ -951,8 +994,8 @@ function HistoricoPage({historyRows}){
     {key:"ippns",label:"IPPNs",ph:"ex: IPN001"},
   ];
 
-  const histTh = {...TH, minWidth:320};
-  const histTd = (alt)=>({...TD(alt), minWidth:320, padding:6});
+  const histTh = {...TH, minWidth:380};
+  const histTd = (alt)=>({...TD(alt), minWidth:380, padding:"10px 14px"});
 
   return(
     <div style={{...WIDE,paddingTop:20}}>
@@ -982,7 +1025,7 @@ function HistoricoPage({historyRows}){
               <thead>
                 <tr>
                   <th style={{...TH,width:30}}></th>
-                  {["Lote","Tubos","IPPNs","Pedido","Item","Material","Depósito","Motivo Bloqueio","Data Bloqueio"].map(h=><th key={h} style={TH}>{h}</th>)}
+                  {["Lote","Tubos","IPPNs","Pedido","Item","Material","Depósito","Motivo Bloqueio","Data Bloqueio","Nº Cassete"].map(h=><th key={h} style={TH}>{h}</th>)}
                   <th style={histTh}>Histórico</th>
                 </tr>
               </thead>
@@ -1002,8 +1045,9 @@ function HistoricoPage({historyRows}){
                       <td style={TD(alt)}>{group.material||"—"}</td>
                       <td style={TD(alt)}>{group.deposito_sap||"—"}</td>
                       <td style={TD(alt)}>{group.motivo_bloqueio||"—"}</td>
-                      <td style={TD(alt)}>{fr.data_bloqueio||"—"}</td>
-                      <td style={histTd(alt)}><HistoryCards history={fr.history}/></td>
+                      <td style={TD(alt)}>{group.data_bloqueio||"—"}</td>
+                      <td style={TD(alt)}>{group.num_cassete||"—"}</td>
+                      <td style={histTd(alt)}><HistoryInline history={fr.history}/></td>
                     </tr>
                   );
                 })}
@@ -1258,12 +1302,12 @@ export default function App(){
   const meta = PAGE_META[page];
 
   return(
-    <div style={{display:"flex",height:"100vh",background:APP_BG,color:"#1C1C1E",fontFamily:FONT,overflow:"hidden"}}>
+    <div style={{height:"100vh",background:APP_BG,color:"#1C1C1E",fontFamily:FONT,overflow:"hidden"}}>
       <GlobalStyles/>
-      <Sidebar page={page} setPage={setPage} user={user} onLogoutClick={()=>setShowLogout(true)}/>
+      <Sidebar page={page} setPage={setPage}/>
 
-      <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",minWidth:0}}>
-        <TopBar title={meta.title} subtitle={meta.subtitle}/>
+      <div style={{display:"flex",flexDirection:"column",height:"100vh",overflow:"hidden"}}>
+        <TopBar title={meta.title} subtitle={meta.subtitle} user={user} onLogoutClick={()=>setShowLogout(true)}/>
         <div style={{flex:1,overflowY:"auto"}}>
           {page==="dashboard"&&<Dashboard stageData={stageData} historyRows={historyRows} onSelectStage={goToPipelineStage}/>}
           {page==="pipeline"&&<PipelinePage key={pipelineTarget} initialStage={pipelineTarget} stageData={stageData} setStageData={setStageData} user={user} historyRows={historyRows} setHistoryRows={setHistoryRows} showToast={showToast}/>}
