@@ -273,6 +273,7 @@ function GlobalStyles(){
       .col-th { cursor: pointer; user-select: none; -webkit-user-select: none; transition: filter 0.15s ease; }
       .col-th:hover { filter: brightness(0.94); }
       .col-th:active { filter: brightness(0.88); }
+      .col-th > div:hover { background: rgba(10,132,255,0.35); }
     `}</style>
   );
 }
@@ -704,7 +705,34 @@ function StageView({stage,rows,user,onAdvance,onReturn,onComplete,filters,fatura
   const [filterFat,setFilterFat]=useState(false);
   const [defError,setDefError]=useState("");
   const [fullscreen,setFullscreen]=useState(false);
+  const [colWidths,setColWidths]=useState({});
   const lastCheckedRef=useRef(null);
+  const resizingColRef=useRef(null);
+
+  // Column-width resize — drag the handle on the right edge of a header
+  useEffect(()=>{
+    function move(e){
+      const r=resizingColRef.current;
+      if(!r) return;
+      const newW=Math.max(50,r.startWidth+(e.clientX-r.startX));
+      setColWidths(prev=>({...prev,[r.key]:newW}));
+    }
+    function up(){
+      if(resizingColRef.current){ resizingColRef.current=null; document.body.style.cursor=""; document.body.style.userSelect=""; }
+    }
+    window.addEventListener("mousemove",move);
+    window.addEventListener("mouseup",up);
+    return ()=>{ window.removeEventListener("mousemove",move); window.removeEventListener("mouseup",up); };
+  },[]);
+  function startColResize(e,key){
+    e.preventDefault();
+    e.stopPropagation();
+    const th=e.currentTarget.parentElement;
+    const startWidth=colWidths[key] || th.offsetWidth;
+    resizingColRef.current={key,startX:e.clientX,startWidth};
+    document.body.style.cursor="col-resize";
+    document.body.style.userSelect="none";
+  }
 
   // Esc exits fullscreen table view
   useEffect(()=>{
@@ -796,7 +824,24 @@ function StageView({stage,rows,user,onAdvance,onReturn,onComplete,filters,fatura
     }
   }
   function colTh(label,key,baseStyle=TH){
-    return <th className="col-th" style={baseStyle} onClick={()=>copyColumn(key,label)} title={`Clique para copiar a coluna "${label}" (colar no Excel)`}>{label}</th>;
+    const w=colWidths[key];
+    return (
+      <th className="col-th" style={{...baseStyle,...(w?{width:w,minWidth:w,maxWidth:w}:{})}} onClick={()=>copyColumn(key,label)} title={`Clique para copiar a coluna "${label}" (colar no Excel)`}>
+        <span style={{display:"block",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{label}</span>
+        <div
+          onMouseDown={e=>startColResize(e,key)}
+          onClick={e=>e.stopPropagation()}
+          title="Arraste para ajustar a largura da coluna"
+          style={{position:"absolute",top:0,right:0,bottom:0,width:8,cursor:"col-resize",zIndex:30}}
+        />
+      </th>
+    );
+  }
+  // Width style for <td> cells in resizable columns — keeps the cell aligned with its header
+  function colTdStyle(key,base){
+    const w=colWidths[key];
+    if(!w) return base;
+    return {...base,width:w,minWidth:w,maxWidth:w,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"};
   }
 
   function buildMoved(loteSet){
@@ -890,7 +935,7 @@ function StageView({stage,rows,user,onAdvance,onReturn,onComplete,filters,fatura
       {defError&&<div style={{display:"flex",alignItems:"center",gap:6,color:"#FF453A",background:"#FFF2F0",borderRadius:10,padding:"8px 12px",marginBottom:12,fontSize:12,fontWeight:600,flexShrink:0}}><AlertTriangle size={13}/>{defError}</div>}
 
       {/* Table */}
-      <div style={{borderRadius:14,boxShadow:"0 1px 6px rgba(0,0,0,0.05)",background:"#fff",overflowX:"auto",overflowY:"auto",maxHeight:fullscreen?"none":"calc(100vh - 280px)",flex:fullscreen?1:"initial",minHeight:180,minWidth:340,resize:fullscreen?"none":"horizontal"}}>
+      <div style={{borderRadius:14,boxShadow:"0 1px 6px rgba(0,0,0,0.05)",background:"#fff",overflowX:"auto",overflowY:"auto",maxHeight:fullscreen?"none":"calc(100vh - 280px)",flex:fullscreen?1:"initial",minHeight:180,minWidth:340}}>
         <table style={{width:"100%",borderCollapse:"collapse",fontSize:10,minWidth:1380}}>
           <thead>
             <tr>
@@ -932,23 +977,23 @@ function StageView({stage,rows,user,onAdvance,onReturn,onComplete,filters,fatura
                   {canInteract&&<td style={stickyTd(bg)}><input type="checkbox" style={{accentColor:ACCENT,cursor:"pointer",width:15,height:15}} checked={isSel} onChange={()=>toggleSel(group.lote,gi,shiftPressedRef.current)}/></td>}
                   {/* Expand IPPNs */}
                   <td style={{...TD(false),background:bg,textAlign:"center",userSelect:"none",WebkitUserSelect:"none"}}><button className="spring-btn" onClick={()=>toggleExp(group.lote)} style={{background:"none",border:"none",cursor:"pointer",color:ACCENT,padding:"1px 3px",display:"flex"}}>{isExp?<ChevronDown size={14}/>:<ChevronRight size={14}/>}</button></td>
-                  <td style={{...TD(false),background:bg,fontWeight:700,color:"#1C1C1E"}}>{group.lote||"—"}</td>
-                  <td style={{...TD(false),background:bg}}><span style={{background:"#E8F4FD",color:"#1A6FA8",borderRadius:6,padding:"2px 7px",fontSize:11,fontWeight:700}}>{group.rows.length}</span></td>
-                  <td style={{...TD(false),background:bg,maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:"#555"}}>{ippnList||"—"}</td>
-                  <td style={{...TD(false),background:bg}}>{group.data_bloqueio||"—"}</td>
-                  <td style={{...TD(false),background:bg}}>{group.num_cassete||"—"}</td>
-                  <td style={{...TD(false),background:bg}}>{group.pedido||"—"}</td>
-                  <td style={{...TD(false),background:bg}}>{group.item||"—"}</td>
-                  <td style={{...TD(false),background:bg}}>{group.material||"—"}</td>
-                  <td style={descTd(bg)}>{group.descricao||"—"}</td>
-                  <td style={{...TD(false),background:bg}}>{group.ultima_ordem||"—"}</td>
-                  <td style={{...TD(false),background:bg}}>{group.qualidade_qts||"—"}</td>
-                  <td style={{...TD(false),background:bg}}>{group.deposito_sap||"—"}</td>
-                  <td style={{...TD(false),background:bg}}>{group.motivo_bloqueio||"—"}</td>
-                  <td style={{...TD(false),background:bg}}>{group.motivo_bloqueio_texto||"—"}</td>
-                  <td style={{...TD(false),background:bg}}>{group.razao_bloq||"—"}</td>
-                  <td style={{...TD(false),background:bg}}>{group.descricao_motivo||"—"}</td>
-                  <td style={{...TD(false),background:gi%2===0?"rgba(10,132,255,0.03)":"rgba(10,132,255,0.06)",minWidth:190}}>
+                  <td style={colTdStyle("lote",{...TD(false),background:bg,fontWeight:700,color:"#1C1C1E"})}>{group.lote||"—"}</td>
+                  <td style={colTdStyle("tubos",{...TD(false),background:bg})}><span style={{background:"#E8F4FD",color:"#1A6FA8",borderRadius:6,padding:"2px 7px",fontSize:11,fontWeight:700}}>{group.rows.length}</span></td>
+                  <td style={colTdStyle("ippns",{...TD(false),background:bg,maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:"#555"})}>{ippnList||"—"}</td>
+                  <td style={colTdStyle("data_bloqueio",{...TD(false),background:bg})}>{group.data_bloqueio||"—"}</td>
+                  <td style={colTdStyle("num_cassete",{...TD(false),background:bg})}>{group.num_cassete||"—"}</td>
+                  <td style={colTdStyle("pedido",{...TD(false),background:bg})}>{group.pedido||"—"}</td>
+                  <td style={colTdStyle("item",{...TD(false),background:bg})}>{group.item||"—"}</td>
+                  <td style={colTdStyle("material",{...TD(false),background:bg})}>{group.material||"—"}</td>
+                  <td style={colTdStyle("descricao",descTd(bg))}>{group.descricao||"—"}</td>
+                  <td style={colTdStyle("ultima_ordem",{...TD(false),background:bg})}>{group.ultima_ordem||"—"}</td>
+                  <td style={colTdStyle("qualidade_qts",{...TD(false),background:bg})}>{group.qualidade_qts||"—"}</td>
+                  <td style={colTdStyle("deposito_sap",{...TD(false),background:bg})}>{group.deposito_sap||"—"}</td>
+                  <td style={colTdStyle("motivo_bloqueio",{...TD(false),background:bg})}>{group.motivo_bloqueio||"—"}</td>
+                  <td style={colTdStyle("motivo_bloqueio_texto",{...TD(false),background:bg})}>{group.motivo_bloqueio_texto||"—"}</td>
+                  <td style={colTdStyle("razao_bloq",{...TD(false),background:bg})}>{group.razao_bloq||"—"}</td>
+                  <td style={colTdStyle("descricao_motivo",{...TD(false),background:bg})}>{group.descricao_motivo||"—"}</td>
+                  <td style={colTdStyle("definicao",{...TD(false),background:gi%2===0?"rgba(10,132,255,0.03)":"rgba(10,132,255,0.06)",minWidth:190})}>
                     {isStage1?(
                       <RecursosSelect value={currentTratValue} onChange={v=>setTratativas(t=>({...t,[group.lote]:v}))} readOnly={!canInteract}/>
                     ):(
@@ -1489,7 +1534,7 @@ function ConfigPage({users,setUsers,faturamento,setFaturamento,stageData}){
           const key=`${r.pedido.trim().toLowerCase()}|${r.item.trim().toLowerCase()}`;
           if(seen.has(key)) return;
           seen.add(key);
-          novos.push({id:`fat_${Date.now()}_${i}`,pedido:r.pedido.trim(),item:r.item.trim(),descricao:(r.descricao||"").trim()});
+          novos.push({id:`fat_${Date.now()}_${i}`,pedido:r.pedido.trim(),item:r.item.trim(),descricao:(r.descricao||"").trim()||lookupDescricao(r.pedido,r.item)});
         });
         return [...f,...novos];
       });
