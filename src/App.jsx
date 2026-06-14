@@ -270,7 +270,7 @@ function GlobalStyles(){
       ::-webkit-scrollbar-thumb:hover { background: rgba(120,120,128,0.45); }
       details summary::-webkit-details-marker { display: none; }
       details summary { list-style: none; cursor: pointer; }
-      .col-th { cursor: pointer; user-select: none; transition: filter 0.15s ease; }
+      .col-th { cursor: pointer; user-select: none; -webkit-user-select: none; transition: filter 0.15s ease; }
       .col-th:hover { filter: brightness(0.94); }
       .col-th:active { filter: brightness(0.88); }
     `}</style>
@@ -280,7 +280,7 @@ function GlobalStyles(){
 // ─────────────────────────────────────────────────────────────────────────────
 // SMALL UI ATOMS
 // ─────────────────────────────────────────────────────────────────────────────
-function Toast({msg}){ if(!msg)return null; return(<div style={{position:"fixed",bottom:28,left:`calc(50% + ${SIDEBAR_W/2}px)`,transform:"translateX(-50%)",background:"rgba(28,28,30,0.92)",backdropFilter:"blur(12px)",color:"#fff",borderRadius:14,padding:"12px 22px",fontSize:14,fontWeight:500,zIndex:500,boxShadow:"0 10px 30px rgba(0,0,0,0.25)",display:"flex",alignItems:"center",gap:8,whiteSpace:"nowrap",pointerEvents:"none",fontFamily:FONT}}><CheckCircle2 size={16} color="#34C759"/>{msg}</div>); }
+function Toast({msg}){ if(!msg)return null; return(<div style={{position:"fixed",bottom:28,left:"50%",transform:"translateX(-50%)",background:"rgba(28,28,30,0.92)",backdropFilter:"blur(12px)",color:"#fff",borderRadius:14,padding:"12px 22px",fontSize:14,fontWeight:500,zIndex:500,boxShadow:"0 10px 30px rgba(0,0,0,0.25)",display:"flex",alignItems:"center",gap:8,whiteSpace:"nowrap",pointerEvents:"none",fontFamily:FONT}}><CheckCircle2 size={16} color="#34C759"/>{msg}</div>); }
 
 function Modal({title,body,onConfirm,onCancel,confirmLabel="Confirmar",danger=false,children}){
   return(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",backdropFilter:"blur(2px)",zIndex:400,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={onCancel}><div style={{background:SURFACE,borderRadius:18,padding:"28px 28px 24px",maxWidth:480,width:"100%",boxShadow:"0 28px 70px rgba(0,0,0,0.25)",fontFamily:FONT}} onClick={e=>e.stopPropagation()}><div style={{fontSize:19,fontWeight:800,color:"#1C1C1E",marginBottom:8,fontFamily:TITLE_FONT,letterSpacing:"-0.3px"}}>{title}</div>{body&&<div style={{fontSize:14,color:"#3A3A3C",marginBottom:children?12:22,lineHeight:1.65}}>{body}</div>}{children&&<div style={{marginBottom:20}}>{children}</div>}<div style={{display:"flex",gap:10,justifyContent:"flex-end"}}><button className="spring-btn" style={{background:"#F2F2F7",color:ACCENT,border:"none",borderRadius:12,padding:"11px 22px",fontSize:14,fontWeight:600,cursor:"pointer"}} onClick={onCancel}>Cancelar</button><button className="spring-btn" style={{background:danger?"linear-gradient(135deg,#FF453A,#C0392B)":`linear-gradient(135deg,${ACCENT},#0051D4)`,color:"#fff",border:"none",borderRadius:12,padding:"11px 22px",fontSize:14,fontWeight:600,cursor:"pointer"}} onClick={onConfirm}>{confirmLabel}</button></div></div></div>);
@@ -299,7 +299,7 @@ function Btn({children,variant="primary",disabled,onClick,small,icon:Icon,style=
     warning:{background:"linear-gradient(135deg,#FF9F0A,#E8890A)",color:"#fff"},
     ghost:{background:"transparent",color:ACCENT},
   };
-  return(<button className="spring-btn" disabled={disabled} onClick={onClick} style={{border:"none",borderRadius:10,padding:small?"7px 14px":"10px 18px",fontSize:small?12:13,fontWeight:600,cursor:disabled?"not-allowed":"pointer",opacity:disabled?0.4:1,display:"inline-flex",alignItems:"center",gap:6,fontFamily:FONT,...variants[variant],...style}}>{Icon&&<Icon size={small?13:15} strokeWidth={2.4}/>}{children}</button>);
+  return(<button className="spring-btn" disabled={disabled} onClick={onClick} style={{border:"none",borderRadius:9,padding:small?"5px 11px":"8px 15px",fontSize:small?11:12,fontWeight:600,cursor:disabled?"not-allowed":"pointer",opacity:disabled?0.4:1,display:"inline-flex",alignItems:"center",gap:5,fontFamily:FONT,...variants[variant],...style}}>{Icon&&<Icon size={small?12:13} strokeWidth={2.4}/>}{children}</button>);
 }
 
 const INP = {width:"100%",border:"1.5px solid #E5E5EA",borderRadius:9,padding:"9px 12px",fontSize:13,outline:"none",background:"#fff",boxSizing:"border-box",fontFamily:FONT};
@@ -310,16 +310,16 @@ const TD = (alt)=>({padding:"8px 10px",borderBottom:`1px solid ${SEPARATOR}`,ver
 // Each history record shown as a 4-line stacked block (stage / definição / usuário / data),
 // laid out horizontally side by side (one block per stage), separated by a vertical divider
 function HistoryInline({history}){
-  if(!history || history.length===0) return <span style={{color:"#C7C7CC",fontSize:11}}>—</span>;
+  if(!history || history.length===0) return <span style={{color:"#C7C7CC",fontSize:10}}>—</span>;
   return(
     <div style={{display:"flex",alignItems:"stretch",flexWrap:"nowrap",gap:0,fontFamily:FONT,overflowX:"auto"}}>
       {history.map((h,hi)=>(
         <div key={hi} style={{display:"flex",alignItems:"stretch",flexShrink:0}}>
           {hi>0&&<div style={{width:1,background:"#E5E5EA",margin:"0 14px",flexShrink:0}}/>}
           <div style={{display:"flex",flexDirection:"column",gap:2,minWidth:150,maxWidth:200,flexShrink:0}}>
-            <div style={{fontSize:11,fontWeight:800,color:"#1C1C1E",lineHeight:1.35,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{h.stage}. {h.stageLabel}:</div>
-            <div style={{fontSize:11,fontWeight:600,color:ACCENT,lineHeight:1.35,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{renderTratativaValue(h.tratativa)}</div>
-            <div style={{fontSize:10.5,color:"#6B6B6B",lineHeight:1.35,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{h.user}</div>
+            <div style={{fontSize:10,fontWeight:400,color:"#1C1C1E",lineHeight:1.35,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{h.stage}. {h.stageLabel}:</div>
+            <div style={{fontSize:10,fontWeight:600,color:ACCENT,lineHeight:1.35,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{renderTratativaValue(h.tratativa)}</div>
+            <div style={{fontSize:10,color:"#6B6B6B",lineHeight:1.35,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{h.user}</div>
             <div style={{fontSize:10,color:"#C7C7CC",lineHeight:1.35,whiteSpace:"nowrap"}}>{h.date}</div>
           </div>
         </div>
@@ -530,21 +530,21 @@ function TopBar({title,subtitle,user,onLogoutClick}){
     <div style={{
       position:"sticky", top:0, zIndex:40,
       background:HEADER_GLASS, backdropFilter:"blur(20px) saturate(180%)", WebkitBackdropFilter:"blur(20px) saturate(180%)",
-      borderBottom:`1px solid ${SEPARATOR}`, padding:"10px 28px", fontFamily:FONT,
+      borderBottom:`1px solid ${SEPARATOR}`, padding:"7px 28px", fontFamily:FONT,
       display:"flex", alignItems:"center", justifyContent:"space-between", gap:16,
     }}>
       <div>
-        <div style={{fontSize:18,fontWeight:800,color:"#1C1C1E",letterSpacing:"-0.3px",fontFamily:TITLE_FONT}}>{title}</div>
-        {subtitle&&<div style={{fontSize:11,color:"#8E8E93",marginTop:1}}>{subtitle}</div>}
+        <div style={{fontSize:15,fontWeight:800,color:"#1C1C1E",letterSpacing:"-0.2px",fontFamily:TITLE_FONT}}>{title}</div>
+        {subtitle&&<div style={{fontSize:10,color:"#8E8E93",marginTop:1}}>{subtitle}</div>}
       </div>
-      <div style={{display:"flex",alignItems:"center",gap:9,flexShrink:0}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
         <div style={{textAlign:"right"}}>
-          <div style={{fontSize:11.5,fontWeight:700,color:"#1C1C1E",lineHeight:1.25}}>{user.name}</div>
-          <div style={{fontSize:10,color:"#8E8E93",lineHeight:1.25}}>{DEPT_FULL[user.dept]||user.dept}</div>
+          <div style={{fontSize:10.5,fontWeight:700,color:"#1C1C1E",lineHeight:1.2}}>{user.name}</div>
+          <div style={{fontSize:9,color:"#8E8E93",lineHeight:1.2}}>{DEPT_FULL[user.dept]||user.dept}</div>
         </div>
-        <div style={{width:28,height:28,borderRadius:"50%",background:`linear-gradient(135deg,${ACCENT},#5AC8FA)`,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:11.5,fontWeight:700,flexShrink:0}}>{user.name.charAt(0)}</div>
-        <button className="spring-btn" onClick={onLogoutClick} title="Sair" style={{background:"#F2F2F7",border:"none",cursor:"pointer",color:"#8E8E93",padding:7,borderRadius:8,display:"flex"}}>
-          <LogOut size={14} strokeWidth={2.2}/>
+        <div style={{width:24,height:24,borderRadius:"50%",background:`linear-gradient(135deg,${ACCENT},#5AC8FA)`,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:10.5,fontWeight:700,flexShrink:0}}>{user.name.charAt(0)}</div>
+        <button className="spring-btn" onClick={onLogoutClick} title="Sair" style={{background:"#F2F2F7",border:"none",cursor:"pointer",color:"#8E8E93",padding:6,borderRadius:7,display:"flex"}}>
+          <LogOut size={13} strokeWidth={2.2}/>
         </button>
       </div>
     </div>
@@ -595,20 +595,20 @@ function SearchBar({filters,onChange,onClear}){
   ];
   const hasAny=fields.some(f=>filters[f.key]);
   return(
-    <div style={{background:SURFACE,borderRadius:14,padding:"14px 16px",boxShadow:"0 1px 4px rgba(0,0,0,0.04)",marginBottom:16}}>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+    <div style={{background:SURFACE,borderRadius:14,padding:"9px 16px",boxShadow:"0 1px 4px rgba(0,0,0,0.04)",marginBottom:16}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:7}}>
         <span style={{fontSize:12.5,fontWeight:700,color:"#3A3A3C",display:"flex",alignItems:"center",gap:6}}><Search size={14} color={ACCENT}/> Busca</span>
-        {hasAny&&<button className="spring-btn" onClick={onClear} style={{background:"none",border:"none",color:"#FF453A",fontSize:12,fontWeight:600,cursor:"pointer"}}>Limpar</button>}
+        {hasAny&&<button className="spring-btn" onClick={onClear} style={{background:"none",border:"none",color:"#FF453A",fontSize:11,fontWeight:600,cursor:"pointer"}}>Limpar</button>}
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(210px,1fr))",gap:10}}>
         {fields.map(f=>(
           <div key={f.key}>
             <div style={{fontSize:10,fontWeight:600,color:"#8E8E93",marginBottom:3}}>{f.label}</div>
-            <input value={filters[f.key]||""} onChange={e=>onChange({...filters,[f.key]:e.target.value})} placeholder={f.ph} style={{width:"100%",border:"1.5px solid #E5E5EA",borderRadius:9,padding:"7px 10px",fontSize:12.5,outline:"none",background:"#FAFAFB",boxSizing:"border-box",fontFamily:FONT}}/>
+            <input value={filters[f.key]||""} onChange={e=>onChange({...filters,[f.key]:e.target.value})} placeholder={f.ph} style={{width:"100%",border:"1.5px solid #E5E5EA",borderRadius:8,padding:"5px 9px",fontSize:11,outline:"none",background:"#FAFAFB",boxSizing:"border-box",fontFamily:FONT}}/>
           </div>
         ))}
       </div>
-      {hasAny&&<div style={{marginTop:8,fontSize:10,color:"#8E8E93"}}>Separe múltiplos valores com espaço, vírgula ou ponto-e-vírgula</div>}
+      {hasAny&&<div style={{marginTop:6,fontSize:10,color:"#8E8E93"}}>Separe múltiplos valores com espaço, vírgula ou ponto-e-vírgula</div>}
     </div>
   );
 }
@@ -707,6 +707,22 @@ function StageView({stage,rows,user,onAdvance,onReturn,onComplete,filters,fatura
 
   const canInteract = user.dept==="Admin" || (user.allowedStages||[]).includes(stage.id);
 
+  // Track Shift key state globally — more reliable than relying on the checkbox's change event
+  const shiftPressedRef=useRef(false);
+  useEffect(()=>{
+    function down(e){ if(e.key==="Shift") shiftPressedRef.current=true; }
+    function up(e){ if(e.key==="Shift") shiftPressedRef.current=false; }
+    function blur(){ shiftPressedRef.current=false; }
+    window.addEventListener("keydown",down);
+    window.addEventListener("keyup",up);
+    window.addEventListener("blur",blur);
+    return ()=>{
+      window.removeEventListener("keydown",down);
+      window.removeEventListener("keyup",up);
+      window.removeEventListener("blur",blur);
+    };
+  },[]);
+
   function toggleSel(lote, idx, shiftKey){
     setDefError("");
     setSelLotes(prev=>{
@@ -804,6 +820,7 @@ function StageView({stage,rows,user,onAdvance,onReturn,onComplete,filters,fatura
 
   const selCount=rows.filter(r=>selLotes.has(r.lote||r._id)).length;
   const selLotesCount=selLotes.size;
+  const displayedTubos=groups.reduce((s,g)=>s+g.rows.length,0);
 
   if(rows.length===0) return(
     <div>
@@ -817,8 +834,8 @@ function StageView({stage,rows,user,onAdvance,onReturn,onComplete,filters,fatura
   );
 
   // Sticky checkbox column (left-fixed)
-  const stickyTh = {...TH, width:34, position:"sticky", left:0, zIndex:25};
-  const stickyTd = (bg)=>({...TD(false), background:bg, textAlign:"center", position:"sticky", left:0, zIndex:5});
+  const stickyTh = {...TH, width:34, position:"sticky", left:0, zIndex:25, userSelect:"none", WebkitUserSelect:"none"};
+  const stickyTd = (bg)=>({...TD(false), background:bg, textAlign:"center", position:"sticky", left:0, zIndex:5, userSelect:"none", WebkitUserSelect:"none"});
   const histTh = {...TH, minWidth:340};
   const histTd = (alt)=>({...TD(alt), minWidth:340, padding:"10px 14px"});
   const descTh = {...TH, minWidth:220};
@@ -833,8 +850,8 @@ function StageView({stage,rows,user,onAdvance,onReturn,onComplete,filters,fatura
       <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:14,flexWrap:"wrap",gap:10}}>
         <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
           <DeptTag dept={stage.dept}/>
-          <span style={{fontSize:12,color:"#8E8E93"}}>{groups.length} lote{groups.length!==1?"s":""} · {rows.length} tubo{rows.length!==1?"s":""}</span>
-          {selLotes.size>0&&<span style={{fontSize:12,fontWeight:700,color:ACCENT,background:"rgba(10,132,255,0.08)",borderRadius:8,padding:"3px 10px"}}>{selLotesCount} lote{selLotesCount!==1?"s":""} ({selCount} tubo{selCount!==1?"s":""})</span>}
+          <span style={{fontSize:11,color:"#8E8E93"}}>{groups.length} lote{groups.length!==1?"s":""} · {displayedTubos} tubo{displayedTubos!==1?"s":""}</span>
+          {selLotes.size>0&&<span style={{fontSize:11,fontWeight:700,color:ACCENT,background:"rgba(10,132,255,0.08)",borderRadius:8,padding:"2px 9px"}}>{selLotesCount} lote{selLotesCount!==1?"s":""} ({selCount} tubo{selCount!==1?"s":""})</span>}
           {!canInteract&&<span style={{fontSize:11,color:"#FF453A",background:"#FFF2F0",borderRadius:6,padding:"2px 8px",fontWeight:600,display:"flex",alignItems:"center",gap:4}}><AlertTriangle size={11}/> Sem permissão nesta etapa</span>}
           {faturamento&&faturamento.length>0&&(
             <button className="spring-btn" onClick={()=>setFilterFat(f=>!f)} title="Filtrar pedidos de faturamento" style={{display:"inline-flex",alignItems:"center",gap:6,background:filterFat?"rgba(255,69,58,0.18)":"rgba(255,69,58,0.10)",border:filterFat?"1px solid rgba(255,69,58,0.5)":"1px solid transparent",borderRadius:6,padding:"2px 9px",fontSize:11,fontWeight:600,color:"#1C1C1E",cursor:"pointer",fontFamily:FONT}}>
@@ -846,9 +863,9 @@ function StageView({stage,rows,user,onAdvance,onReturn,onComplete,filters,fatura
         {/* Action buttons */}
         {canInteract&&(
           <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-            {stage.id>1&&onReturn&&<Btn variant="warning" icon={ArrowLeft} disabled={selLotes.size===0} onClick={()=>setConfirmRet(true)}>Retornar: {prevStage?.short}</Btn>}
-            {!isStage8&&<Btn icon={ArrowRight} disabled={selLotes.size===0} onClick={tryAdvance}>{nextStage?.short} ({selLotesCount})</Btn>}
-            {isStage8&&<Btn variant="danger" icon={CheckCircle2} disabled={selLotes.size===0} onClick={tryComplete}>Concluir ({selLotesCount})</Btn>}
+            {stage.id>1&&onReturn&&<Btn small variant="warning" icon={ArrowLeft} disabled={selLotes.size===0} onClick={()=>setConfirmRet(true)}>Retornar: {prevStage?.short}</Btn>}
+            {!isStage8&&<Btn small icon={ArrowRight} disabled={selLotes.size===0} onClick={tryAdvance}>{nextStage?.short} ({selLotesCount})</Btn>}
+            {isStage8&&<Btn small variant="danger" icon={CheckCircle2} disabled={selLotes.size===0} onClick={tryComplete}>Concluir ({selLotesCount})</Btn>}
           </div>
         )}
       </div>
@@ -857,7 +874,7 @@ function StageView({stage,rows,user,onAdvance,onReturn,onComplete,filters,fatura
 
       {/* Table */}
       <div style={{borderRadius:14,boxShadow:"0 1px 6px rgba(0,0,0,0.05)",background:"#fff",overflowX:"auto",overflowY:"auto",maxHeight:"calc(100vh - 280px)",minHeight:180}}>
-        <table style={{width:"100%",borderCollapse:"collapse",fontSize:10,minWidth:1380,userSelect:"none",WebkitUserSelect:"none"}}>
+        <table style={{width:"100%",borderCollapse:"collapse",fontSize:10,minWidth:1380}}>
           <thead>
             <tr>
               {canInteract&&<th style={stickyTh}><input type="checkbox" style={{accentColor:ACCENT,cursor:"pointer",width:15,height:15}} checked={selLotes.size===groups.length&&groups.length>0} onChange={e=>toggleAll(e.target.checked)}/></th>}
@@ -895,9 +912,9 @@ function StageView({stage,rows,user,onAdvance,onReturn,onComplete,filters,fatura
 
               return[
                 <tr key={`g-${group.lote}`} style={{background:bg}}>
-                  {canInteract&&<td style={stickyTd(bg)}><input type="checkbox" style={{accentColor:ACCENT,cursor:"pointer",width:15,height:15}} checked={isSel} onChange={()=>{}} onClick={e=>{e.preventDefault();toggleSel(group.lote,gi,e.shiftKey);}}/></td>}
+                  {canInteract&&<td style={stickyTd(bg)}><input type="checkbox" style={{accentColor:ACCENT,cursor:"pointer",width:15,height:15}} checked={isSel} onChange={()=>toggleSel(group.lote,gi,shiftPressedRef.current)}/></td>}
                   {/* Expand IPPNs */}
-                  <td style={{...TD(false),background:bg,textAlign:"center"}}><button className="spring-btn" onClick={()=>toggleExp(group.lote)} style={{background:"none",border:"none",cursor:"pointer",color:ACCENT,padding:"1px 3px",display:"flex"}}>{isExp?<ChevronDown size={14}/>:<ChevronRight size={14}/>}</button></td>
+                  <td style={{...TD(false),background:bg,textAlign:"center",userSelect:"none",WebkitUserSelect:"none"}}><button className="spring-btn" onClick={()=>toggleExp(group.lote)} style={{background:"none",border:"none",cursor:"pointer",color:ACCENT,padding:"1px 3px",display:"flex"}}>{isExp?<ChevronDown size={14}/>:<ChevronRight size={14}/>}</button></td>
                   <td style={{...TD(false),background:bg,fontWeight:700,color:"#1C1C1E"}}>{group.lote||"—"}</td>
                   <td style={{...TD(false),background:bg}}><span style={{background:"#E8F4FD",color:"#1A6FA8",borderRadius:6,padding:"2px 7px",fontSize:11,fontWeight:700}}>{group.rows.length}</span></td>
                   <td style={{...TD(false),background:bg,maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:"#555"}}>{ippnList||"—"}</td>
@@ -1034,7 +1051,7 @@ function Dashboard({stageData,historyRows,onSelectStage}){
     <div style={{...WIDE,paddingTop:20}}>
       {/* Report header */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:20,flexWrap:"wrap",gap:8}}>
-        <div style={{fontSize:22,fontWeight:900,color:"#1C1C1E",letterSpacing:"-0.6px",fontFamily:TITLE_FONT}}>Visão Geral</div>
+        <div style={{fontSize:15,fontWeight:800,color:"#1C1C1E",letterSpacing:"-0.2px",fontFamily:TITLE_FONT}}>Visão Geral</div>
         <div style={{fontSize:11,color:"#8E8E93"}}>Atualizado em {now.toLocaleDateString("pt-BR")} às {now.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}</div>
       </div>
 
@@ -1300,15 +1317,15 @@ function HistoricoPage({historyRows}){
   return(
     <div style={{...WIDE,paddingTop:20}}>
       {/* Search */}
-      <div style={{background:SURFACE,borderRadius:14,padding:"14px 16px",boxShadow:"0 1px 4px rgba(0,0,0,0.04)",marginBottom:16}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+      <div style={{background:SURFACE,borderRadius:14,padding:"9px 16px",boxShadow:"0 1px 4px rgba(0,0,0,0.04)",marginBottom:16}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:7}}>
           <span style={{fontSize:12.5,fontWeight:700,color:"#3A3A3C",display:"flex",alignItems:"center",gap:6}}><Search size={14} color={ACCENT}/> Pesquisar Histórico</span>
-          {hasFilters&&<button className="spring-btn" onClick={()=>setFilters({pedido:"",item:"",material:"",lotes:"",ippns:""})} style={{background:"none",border:"none",color:"#FF453A",fontSize:12,fontWeight:600,cursor:"pointer"}}>Limpar</button>}
+          {hasFilters&&<button className="spring-btn" onClick={()=>setFilters({pedido:"",item:"",material:"",lotes:"",ippns:""})} style={{background:"none",border:"none",color:"#FF453A",fontSize:11,fontWeight:600,cursor:"pointer"}}>Limpar</button>}
         </div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(190px,1fr))",gap:10}}>
-          {searchFields.map(f=><div key={f.key}><div style={{fontSize:10,fontWeight:600,color:"#8E8E93",marginBottom:3}}>{f.label}</div><input value={filters[f.key]} onChange={e=>setFilters(v=>({...v,[f.key]:e.target.value}))} placeholder={f.ph} style={{width:"100%",border:"1.5px solid #E5E5EA",borderRadius:9,padding:"7px 10px",fontSize:12.5,outline:"none",background:"#FAFAFB",boxSizing:"border-box",fontFamily:FONT}}/></div>)}
+          {searchFields.map(f=><div key={f.key}><div style={{fontSize:10,fontWeight:600,color:"#8E8E93",marginBottom:3}}>{f.label}</div><input value={filters[f.key]} onChange={e=>setFilters(v=>({...v,[f.key]:e.target.value}))} placeholder={f.ph} style={{width:"100%",border:"1.5px solid #E5E5EA",borderRadius:8,padding:"5px 9px",fontSize:11,outline:"none",background:"#FAFAFB",boxSizing:"border-box",fontFamily:FONT}}/></div>)}
         </div>
-        {hasFilters&&<div style={{marginTop:8,fontSize:10,color:"#8E8E93"}}>Separe múltiplos valores com espaço, vírgula ou ponto-e-vírgula</div>}
+        {hasFilters&&<div style={{marginTop:6,fontSize:10,color:"#8E8E93"}}>Separe múltiplos valores com espaço, vírgula ou ponto-e-vírgula</div>}
       </div>
 
       {historyRows.length===0?(
