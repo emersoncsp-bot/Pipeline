@@ -5,8 +5,8 @@ import {
   LayoutGrid, GitBranch, History as HistoryIcon, Settings, Search,
   ChevronRight, ChevronDown, ArrowRight, ArrowLeft, CheckCircle2,
   Upload, LogOut, Plus, Pencil, Trash2, Shield, Users, Inbox,
-  Clock, AlertTriangle, RotateCcw, FlaskConical, Loader2, Layers,
-  BarChart3, Package, Building2, Receipt, PieChart, X,
+  Clock, AlertTriangle, RotateCcw, Loader2, Layers,
+  BarChart3, Package, Building2, Receipt, PieChart, X, List,
 } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -183,12 +183,13 @@ function parseTokens(str) {
 }
 
 function rowMatchesSearch(row, filters) {
-  const tPedidoItem = parseTokens(filters.pedido_item);
-  const tLotes      = parseTokens(filters.lotes);
-  const tIppns      = parseTokens(filters.ippns);
-  const tDeposito   = parseTokens(filters.deposito);
+  const tPedido = parseTokens(filters.pedido);
+  const tItem   = parseTokens(filters.item);
+  const tLotes  = parseTokens(filters.lotes);
+  const tIppns  = parseTokens(filters.ippns);
+  const tDeposito = parseTokens(filters.deposito);
   const match = (tokens, fields) => !tokens.length || tokens.some(t=>fields.some(f=>String(row[f]||"").toLowerCase().includes(t)));
-  return match(tPedidoItem,["pedido","item"]) && match(tLotes,["lote"]) && match(tIppns,["ippn"]) && match(tDeposito,["deposito_sap"]);
+  return match(tPedido,["pedido"]) && match(tItem,["item"]) && match(tLotes,["lote"]) && match(tIppns,["ippn"]) && match(tDeposito,["deposito_sap"]);
 }
 
 function initStageData() { return {1:[],2:[],3:[],4:[],5:[],6:[],7:[],8:[]}; }
@@ -299,23 +300,26 @@ function Btn({children,variant="primary",disabled,onClick,small,icon:Icon,style=
 }
 
 const INP = {width:"100%",border:"1.5px solid #E5E5EA",borderRadius:9,padding:"9px 12px",fontSize:13,outline:"none",background:"#fff",boxSizing:"border-box",fontFamily:FONT};
-const TH = {background:"#F6F6F8",padding:"10px 11px",textAlign:"left",fontWeight:700,color:"#6B6B70",borderBottom:`1px solid ${SEPARATOR}`,whiteSpace:"nowrap",fontSize:10.5,textTransform:"uppercase",letterSpacing:"0.4px",position:"sticky",top:0,zIndex:10};
-const TH_ACCENT = {...TH, background:"rgba(10,132,255,0.08)", color:ACCENT};
-const TD = (alt)=>({padding:"10px 11px",borderBottom:`1px solid ${SEPARATOR}`,verticalAlign:"middle",fontSize:13,color:"#1C1C1E",background:alt?"#FAFAFB":"#fff"});
+const TH = {background:"#ECECF0",padding:"9px 10px",textAlign:"left",fontWeight:700,color:"#5C5C61",borderBottom:`1px solid ${SEPARATOR}`,whiteSpace:"nowrap",fontSize:10,textTransform:"uppercase",letterSpacing:"0.4px",position:"sticky",top:0,zIndex:10};
+const TH_ACCENT = {...TH, background:"#DCEEFF", color:"#0058B8"};
+const TD = (alt)=>({padding:"9px 10px",borderBottom:`1px solid ${SEPARATOR}`,verticalAlign:"middle",fontSize:12,color:"#1C1C1E",background:alt?"#FAFAFB":"#fff"});
 
-// Inline history record list — stages separated by a vertical bar "|", clean look (no cards)
+// Each history record shown as a 4-line stacked block (stage / definição / usuário / data),
+// with records separated by a vertical divider — "clean" layout, no cards
 function HistoryInline({history}){
   if(!history || history.length===0) return <span style={{color:"#C7C7CC",fontSize:11}}>—</span>;
   return(
-    <div style={{display:"flex",alignItems:"center",flexWrap:"wrap",gap:0,fontSize:11,lineHeight:1.6,fontFamily:FONT}}>
+    <div style={{display:"flex",alignItems:"stretch",flexWrap:"wrap",gap:0,fontFamily:FONT}}>
       {history.map((h,hi)=>(
-        <span key={hi} style={{display:"inline-flex",alignItems:"baseline",whiteSpace:"nowrap"}}>
-          {hi>0&&<span style={{color:"#D1D1D6",margin:"0 10px",fontWeight:300}}>|</span>}
-          <span style={{fontWeight:700,color:"#1C1C1E"}}>{h.stage}. {h.stageLabel}:</span>
-          <span style={{color:ACCENT,fontWeight:600,marginLeft:5}}>{renderTratativaValue(h.tratativa)}</span>
-          <span style={{color:"#8E8E93",marginLeft:6}}>— {h.user}</span>
-          <span style={{color:"#C7C7CC",marginLeft:5}}>({h.date})</span>
-        </span>
+        <div key={hi} style={{display:"flex",alignItems:"stretch"}}>
+          {hi>0&&<div style={{width:1,background:"#E5E5EA",margin:"0 14px"}}/>}
+          <div style={{display:"flex",flexDirection:"column",gap:2,minWidth:150,maxWidth:200}}>
+            <div style={{fontSize:11,fontWeight:800,color:"#1C1C1E",lineHeight:1.35}}>{h.stage}. {h.stageLabel}:</div>
+            <div style={{fontSize:11,fontWeight:600,color:ACCENT,lineHeight:1.35,wordBreak:"break-word"}}>{renderTratativaValue(h.tratativa)}</div>
+            <div style={{fontSize:10.5,color:"#6B6B6B",lineHeight:1.35}}>{h.user}</div>
+            <div style={{fontSize:10,color:"#C7C7CC",lineHeight:1.35}}>{h.date}</div>
+          </div>
+        </div>
       ))}
     </div>
   );
@@ -374,6 +378,31 @@ function RecursosSelect({value,onChange,readOnly}){
   );
 }
 
+// PipeLine brand icon — connected pipeline stages (nodes + line), gradient badge
+function BrandIcon({size=34,radius}){
+  const r = radius ?? Math.round(size*0.26);
+  return(
+    <div style={{width:size,height:size,borderRadius:r,background:`linear-gradient(135deg,${ACCENT},#0051D4)`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,boxShadow:"0 4px 12px rgba(10,132,255,0.3)"}}>
+      <svg width={size*0.62} height={size*0.62} viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <line x1="24" y1="60" x2="96" y2="60" stroke="#FFFFFF" strokeWidth="5" strokeLinecap="round" opacity="0.55"/>
+        <circle cx="24" cy="60" r="9" fill="#FFFFFF"/>
+        <circle cx="48" cy="60" r="9" fill="#FFFFFF"/>
+        <circle cx="72" cy="60" r="9" fill="#FFFFFF"/>
+        <circle cx="96" cy="60" r="10" fill="none" stroke="#FFFFFF" strokeWidth="4"/>
+      </svg>
+    </div>
+  );
+}
+
+// PipeLine wordmark — "Pipe" in neutral, "Line" in accent
+function BrandWordmark({size=17,color="#1C1C1E",accent=ACCENT}){
+  return(
+    <span style={{fontSize:size,fontWeight:800,letterSpacing:"-0.4px",fontFamily:TITLE_FONT}}>
+      <span style={{color}}>Pipe</span><span style={{color:accent}}>Line</span>
+    </span>
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // LOGIN
 // ─────────────────────────────────────────────────────────────────────────────
@@ -396,9 +425,9 @@ function LoginPage({onLogin,users}){
       <GlobalStyles/>
       <div style={{background:"rgba(255,255,255,0.96)",backdropFilter:"blur(20px)",borderRadius:24,padding:"42px 38px",width:380,boxShadow:"0 30px 70px rgba(0,0,0,0.35)"}}>
         <div style={{textAlign:"center",marginBottom:30}}>
-          <div style={{width:60,height:60,borderRadius:18,margin:"0 auto 16px",background:`linear-gradient(135deg,${ACCENT},#0051D4)`,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 8px 22px rgba(10,132,255,0.35)"}}><FlaskConical size={28} color="#fff" strokeWidth={2}/></div>
-          <div style={{fontSize:25,fontWeight:800,color:"#0A2240",letterSpacing:"-0.5px"}}>Fluxo de Liberação</div>
-          <div style={{fontSize:13,color:"#8E8E93",marginTop:4}}>Gestão de Produtos — Controle da Qualidade</div>
+          <div style={{display:"flex",justifyContent:"center",marginBottom:16}}><BrandIcon size={60} radius={18}/></div>
+          <div style={{display:"flex",justifyContent:"center"}}><BrandWordmark size={28}/></div>
+          <div style={{fontSize:13,color:"#8E8E93",marginTop:6}}>Fluxo de Liberação · Gestão de Pipeline</div>
         </div>
         {err&&<div style={{color:"#FF453A",fontSize:13,textAlign:"center",background:"#FFF2F0",borderRadius:10,padding:"8px 12px",marginBottom:12}}>{err}</div>}
         <div style={{marginBottom:14}}><label style={{fontSize:13,fontWeight:600,color:"#3A3A3C",marginBottom:6,display:"block"}}>E-mail</label><input style={INP} type="email" placeholder="seu@empresa.com" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&go()} autoFocus/></div>
@@ -463,10 +492,11 @@ function Sidebar({page,setPage}){
         }}
       >
         <div style={{display:"flex",alignItems:"center",gap:10,padding:"4px 8px",marginBottom:24}}>
-          <div style={{width:34,height:34,borderRadius:9,background:`linear-gradient(135deg,${ACCENT},#0051D4)`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,boxShadow:"0 4px 12px rgba(10,132,255,0.3)"}}>
-            <FlaskConical size={18} color="#fff" strokeWidth={2.2}/>
+          <BrandIcon size={34}/>
+          <div style={{lineHeight:1.2}}>
+            <BrandWordmark size={17}/>
+            <div style={{fontSize:10,color:"#8E8E93",fontWeight:500,marginTop:1}}>Fluxo de Liberação</div>
           </div>
-          <div style={{fontSize:15,fontWeight:800,color:"#1C1C1E",letterSpacing:"-0.3px",lineHeight:1.25,fontFamily:TITLE_FONT}}>Fluxo de<br/>Liberação</div>
         </div>
 
         <nav style={{display:"flex",flexDirection:"column",gap:2}}>
@@ -554,7 +584,8 @@ function PipelineBar({stageData,activeStage,onSelectStage,searchResult}){
 // ─────────────────────────────────────────────────────────────────────────────
 function SearchBar({filters,onChange,onClear}){
   const fields=[
-    {key:"pedido_item",label:"Pedido / Item",ph:"ex: 4500001 10"},
+    {key:"pedido",label:"Pedido",ph:"ex: 4500001"},
+    {key:"item",label:"Item",ph:"ex: 10"},
     {key:"lotes",label:"Lotes",ph:"ex: LOTE-001; LOTE-002"},
     {key:"ippns",label:"IPPNs",ph:"ex: IPN001 IPN002"},
     {key:"deposito",label:"Depósito SAP",ph:"ex: DEP-01"},
@@ -600,14 +631,7 @@ function ImportStep({onImport}){
   }
   const handleDrop=useCallback(e=>{e.preventDefault();setDrag(false);processFile(e.dataTransfer.files[0]);},[]);
 
-  const previewCols=["pedido_item","material","lote","ippn","deposito_sap","motivo_bloqueio","data_bloqueio"];
-  function previewCell(row,col){
-    if(col==="pedido_item") return (row.pedido||row.item)?`${row.pedido||"—"}/${row.item||"—"}`:"—";
-    return row[col]||"—";
-  }
-  function previewLabel(col){
-    return col==="pedido_item" ? "Pedido/Item" : (COL_LABELS[col]||col);
-  }
+  const previewCols=["pedido","item","material","lote","ippn","deposito_sap","motivo_bloqueio","data_bloqueio"];
   return(
     <div>
       <div style={{fontSize:13,color:"#8E8E93",marginBottom:20}}>Carregue um arquivo CSV, TXT ou XLS/XLSX para iniciar o fluxo na Etapa 1.</div>
@@ -625,8 +649,8 @@ function ImportStep({onImport}){
           <div style={{fontSize:13,color:"#34C759",fontWeight:700,marginBottom:10,display:"flex",alignItems:"center",gap:6}}><CheckCircle2 size={15}/> {preview.length} tubos encontrados</div>
           <div style={{overflowX:"auto",borderRadius:14,boxShadow:"0 1px 5px rgba(0,0,0,0.06)",background:"#fff",maxHeight:260,overflowY:"auto",marginBottom:14}}>
             <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,minWidth:600}}>
-              <thead><tr>{previewCols.map(c=><th key={c} style={TH}>{previewLabel(c)}</th>)}</tr></thead>
-              <tbody>{preview.slice(0,10).map((row,i)=><tr key={i}>{previewCols.map(c=><td key={c} style={TD(i%2===1)}>{previewCell(row,c)}</td>)}</tr>)}</tbody>
+              <thead><tr>{previewCols.map(c=><th key={c} style={TH}>{COL_LABELS[c]||c}</th>)}</tr></thead>
+              <tbody>{preview.slice(0,10).map((row,i)=><tr key={i}>{previewCols.map(c=><td key={c} style={TD(i%2===1)}>{row[c]||"—"}</td>)}</tr>)}</tbody>
             </table>
           </div>
           {preview.length>10&&<div style={{fontSize:11,color:"#8E8E93",marginBottom:10}}>Exibindo 10 de {preview.length} linhas</div>}
@@ -639,7 +663,7 @@ function ImportStep({onImport}){
         <div style={{background:"#fff",borderRadius:14,padding:"14px 16px",boxShadow:"0 1px 4px rgba(0,0,0,0.04)"}}>
           <div style={{fontSize:12,fontWeight:700,color:"#3A3A3C",marginBottom:6}}>Colunas esperadas (mapeamento automático por nome):</div>
           <div style={{fontSize:11,color:"#8E8E93",lineHeight:2}}>{Object.values(COL_LABELS).join(" · ")}</div>
-          <div style={{fontSize:11,color:"#8E8E93",marginTop:6}}>A coluna <strong>Data Bloqueio</strong> é automaticamente ajustada para o formato DD/MM/AAAA. As colunas <strong>Pedido</strong> e <strong>Item</strong> são exibidas em conjunto como <strong>Pedido/Item</strong>.</div>
+          <div style={{fontSize:11,color:"#8E8E93",marginTop:6}}>A coluna <strong>Data Bloqueio</strong> é automaticamente ajustada para o formato DD/MM/AAAA.</div>
         </div>
       )}
     </div>
@@ -663,19 +687,45 @@ function StageView({stage,rows,user,onAdvance,onReturn,onComplete,filters,fatura
   const prevStage = STAGES.find(s=>s.id===stage.id-1);
 
   const hasSearch = filters && Object.values(filters).some(Boolean);
-  const allGroups = groupByLote(rows);
-  // Search also filters the table itself (not just the pipeline badge counts)
-  const groups = hasSearch ? allGroups.filter(g=>g.rows.some(r=>rowMatchesSearch(r,filters))) : allGroups;
 
   // Pedido/Item combos registered in Faturamento — highlighted in the table
   const fatSet = new Set((faturamento||[]).map(f=>`${(f.pedido||"").trim()}|${(f.item||"").trim()}`.toLowerCase()));
   const isFaturado = (g)=>fatSet.has(`${(g.pedido||"").trim()}|${(g.item||"").trim()}`.toLowerCase());
 
+  const [filterFat,setFilterFat]=useState(false);
+  const [defError,setDefError]=useState("");
+  const lastCheckedRef=useRef(null);
+
+  const allGroups = groupByLote(rows);
+  // Search also filters the table itself (not just the pipeline badge counts)
+  let groups = hasSearch ? allGroups.filter(g=>g.rows.some(r=>rowMatchesSearch(r,filters))) : allGroups;
+  // "Faturamento" legend acts as an interactive filter
+  if(filterFat) groups = groups.filter(isFaturado);
+
   const canInteract = user.dept==="Admin" || (user.allowedStages||[]).includes(stage.id);
 
-  function toggleSel(lote){const n=new Set(selLotes);n.has(lote)?n.delete(lote):n.add(lote);setSelLotes(n);}
-  function toggleAll(c){setSelLotes(c?new Set(groups.map(g=>g.lote)):new Set());}
+  function toggleSel(lote, idx, shiftKey){
+    setDefError("");
+    setSelLotes(prev=>{
+      const n=new Set(prev);
+      if(shiftKey && lastCheckedRef.current!=null){
+        const [start,end]=[lastCheckedRef.current,idx].sort((a,b)=>a-b);
+        for(let i=start;i<=end;i++){ if(groups[i]) n.add(groups[i].lote); }
+      } else {
+        n.has(lote)?n.delete(lote):n.add(lote);
+      }
+      return n;
+    });
+    lastCheckedRef.current=idx;
+  }
+  function toggleAll(c){setSelLotes(c?new Set(groups.map(g=>g.lote)):new Set());lastCheckedRef.current=null;}
   function toggleExp(lote){const n=new Set(expanded);n.has(lote)?n.delete(lote):n.add(lote);setExpanded(n);}
+
+  function isDefinicaoEmpty(group){
+    const v = tratativas[group.lote] ?? group.tratativa;
+    if(Array.isArray(v)) return v.length===0;
+    return !v || !String(v).trim();
+  }
 
   function buildMoved(loteSet){
     return rows.filter(r=>loteSet.has(r.lote||r._id)).map(r=>{
@@ -699,6 +749,18 @@ function StageView({stage,rows,user,onAdvance,onReturn,onComplete,filters,fatura
   function doReturn(){const moved=buildMoved(selLotes);const rem=rows.filter(r=>!selLotes.has(r.lote||r._id));onReturn(moved,rem);setSelLotes(new Set());setTratativas({});setConfirmRet(false);}
   function doComplete(){const moved=buildMoved(selLotes);const rem=rows.filter(r=>!selLotes.has(r.lote||r._id));onComplete(moved,rem);setSelLotes(new Set());setTratativas({});setConfirmDone(false);}
 
+  // "Definição" is required before sending lotes to the next stage (or concluding at Etapa 8)
+  function tryAdvance(){
+    const sel=groups.filter(g=>selLotes.has(g.lote));
+    if(sel.some(isDefinicaoEmpty)){setDefError('Preencha o campo "Definição" para todos os lotes selecionados antes de enviar.');return;}
+    setDefError("");setConfirmAdv(true);
+  }
+  function tryComplete(){
+    const sel=groups.filter(g=>selLotes.has(g.lote));
+    if(sel.some(isDefinicaoEmpty)){setDefError('Preencha o campo "Definição" para todos os lotes selecionados antes de concluir.');return;}
+    setDefError("");setConfirmDone(true);
+  }
+
   const selCount=rows.filter(r=>selLotes.has(r.lote||r._id)).length;
   const selLotesCount=selLotes.size;
 
@@ -716,13 +778,13 @@ function StageView({stage,rows,user,onAdvance,onReturn,onComplete,filters,fatura
   // Sticky checkbox column (left-fixed)
   const stickyTh = {...TH, width:34, position:"sticky", left:0, zIndex:25};
   const stickyTd = (bg)=>({...TD(false), background:bg, textAlign:"center", position:"sticky", left:0, zIndex:5});
-  const histTh = {...TH, minWidth:380};
-  const histTd = (alt)=>({...TD(alt), minWidth:380, padding:"10px 14px"});
+  const histTh = {...TH, minWidth:340};
+  const histTd = (alt)=>({...TD(alt), minWidth:340, padding:"10px 14px"});
   const descTh = {...TH, minWidth:220};
   const descTd = (bg)=>({...TD(false), background:bg, minWidth:220});
 
   // total column count (for IPPN expand row colSpan)
-  const totalCols = (canInteract?1:0) /*checkbox*/ + 1 /*expand*/ + 3 /*Lote,Tubos,IPPNs*/ + 2 /*DataBloqueio,Cassete*/ + 3 /*Pedido/Item,Material,Descricao*/ + 4 /*UltimaOrdem,QTS,Deposito,Motivo*/ + 3 /*MotivoTexto,RazaoBloq,DescricaoMotivo*/ + 1 /*Definição*/ + (stage.id>1?1:0) /*Historico*/;
+  const totalCols = (canInteract?1:0) /*checkbox*/ + 1 /*expand*/ + 3 /*Lote,Tubos,IPPNs*/ + 2 /*DataBloqueio,Cassete*/ + 4 /*Pedido,Item,Material,Descricao*/ + 4 /*UltimaOrdem,QTS,Deposito,Motivo*/ + 3 /*MotivoTexto,RazaoBloq,DescricaoMotivo*/ + 1 /*Definição*/ + (stage.id>1?1:0) /*Historico*/;
 
   return(
     <div>
@@ -734,25 +796,27 @@ function StageView({stage,rows,user,onAdvance,onReturn,onComplete,filters,fatura
           {selLotes.size>0&&<span style={{fontSize:12,fontWeight:700,color:ACCENT,background:"rgba(10,132,255,0.08)",borderRadius:8,padding:"3px 10px"}}>{selLotesCount} lote{selLotesCount!==1?"s":""} ({selCount} tubo{selCount!==1?"s":""})</span>}
           {!canInteract&&<span style={{fontSize:11,color:"#FF453A",background:"#FFF2F0",borderRadius:6,padding:"2px 8px",fontWeight:600,display:"flex",alignItems:"center",gap:4}}><AlertTriangle size={11}/> Sem permissão nesta etapa</span>}
           {faturamento&&faturamento.length>0&&(
-            <span style={{display:"inline-flex",alignItems:"center",gap:6,background:"rgba(255,69,58,0.10)",borderRadius:6,padding:"2px 9px",fontSize:11,fontWeight:600,color:"#1C1C1E"}}>
+            <button className="spring-btn" onClick={()=>setFilterFat(f=>!f)} title="Filtrar pedidos de faturamento" style={{display:"inline-flex",alignItems:"center",gap:6,background:filterFat?"rgba(255,69,58,0.18)":"rgba(255,69,58,0.10)",border:filterFat?"1px solid rgba(255,69,58,0.5)":"1px solid transparent",borderRadius:6,padding:"2px 9px",fontSize:11,fontWeight:600,color:"#1C1C1E",cursor:"pointer",fontFamily:FONT}}>
               <span style={{width:9,height:9,borderRadius:3,background:"rgba(255,69,58,0.35)",display:"inline-block"}}/>
               Faturamento
-            </span>
+            </button>
           )}
         </div>
         {/* Action buttons */}
         {canInteract&&(
           <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
             {stage.id>1&&onReturn&&<Btn variant="warning" icon={ArrowLeft} disabled={selLotes.size===0} onClick={()=>setConfirmRet(true)}>Retornar: {prevStage?.short}</Btn>}
-            {!isStage8&&<Btn icon={ArrowRight} disabled={selLotes.size===0} onClick={()=>setConfirmAdv(true)}>{nextStage?.short} ({selLotesCount})</Btn>}
-            {isStage8&&<Btn variant="danger" icon={CheckCircle2} disabled={selLotes.size===0} onClick={()=>setConfirmDone(true)}>Concluir ({selLotesCount})</Btn>}
+            {!isStage8&&<Btn icon={ArrowRight} disabled={selLotes.size===0} onClick={tryAdvance}>{nextStage?.short} ({selLotesCount})</Btn>}
+            {isStage8&&<Btn variant="danger" icon={CheckCircle2} disabled={selLotes.size===0} onClick={tryComplete}>Concluir ({selLotesCount})</Btn>}
           </div>
         )}
       </div>
 
+      {defError&&<div style={{display:"flex",alignItems:"center",gap:6,color:"#FF453A",background:"#FFF2F0",borderRadius:10,padding:"8px 12px",marginBottom:12,fontSize:12,fontWeight:600}}><AlertTriangle size={13}/>{defError}</div>}
+
       {/* Table */}
       <div style={{borderRadius:14,boxShadow:"0 1px 6px rgba(0,0,0,0.05)",background:"#fff",overflowX:"auto",overflowY:"auto",maxHeight:"calc(100vh - 280px)",minHeight:180}}>
-        <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,minWidth:1320}}>
+        <table style={{width:"100%",borderCollapse:"collapse",fontSize:11.5,minWidth:1380}}>
           <thead>
             <tr>
               {canInteract&&<th style={stickyTh}><input type="checkbox" style={{accentColor:ACCENT,cursor:"pointer",width:15,height:15}} checked={selLotes.size===groups.length&&groups.length>0} onChange={e=>toggleAll(e.target.checked)}/></th>}
@@ -762,7 +826,8 @@ function StageView({stage,rows,user,onAdvance,onReturn,onComplete,filters,fatura
               <th style={TH}>IPPNs</th>
               <th style={TH}>Data Bloqueio</th>
               <th style={TH}>Nº Cassete</th>
-              <th style={TH}>Pedido/Item</th>
+              <th style={TH}>Pedido</th>
+              <th style={TH}>Item</th>
               <th style={TH}>Material</th>
               <th style={descTh}>Descrição</th>
               <th style={TH}>Última Ordem</th>
@@ -784,13 +849,12 @@ function StageView({stage,rows,user,onAdvance,onReturn,onComplete,filters,fatura
               const ippnList=group.rows.map(r=>r.ippn).filter(Boolean).join(", ");
               const alt=gi%2===1;
               const fat=isFaturado(group);
-              const bg=isSel?"rgba(10,132,255,0.06)":(fat?"rgba(255,69,58,0.07)":(alt?"#FAFAFB":"#fff"));
-              const pedidoItem = (group.pedido||group.item) ? `${group.pedido||"—"}/${group.item||"—"}` : "—";
+              const bg=isSel?"#DCEEFF":(fat?"rgba(255,69,58,0.07)":(alt?"#FAFAFB":"#fff"));
               const currentTratValue = tratativas[group.lote] ?? group.tratativa;
 
               return[
                 <tr key={`g-${group.lote}`} style={{background:bg}}>
-                  {canInteract&&<td style={stickyTd(bg)}><input type="checkbox" style={{accentColor:ACCENT,cursor:"pointer",width:15,height:15}} checked={isSel} onChange={()=>toggleSel(group.lote)}/></td>}
+                  {canInteract&&<td style={stickyTd(bg)}><input type="checkbox" style={{accentColor:ACCENT,cursor:"pointer",width:15,height:15}} checked={isSel} onChange={e=>toggleSel(group.lote,gi,e.nativeEvent.shiftKey)}/></td>}
                   {/* Expand IPPNs */}
                   <td style={{...TD(false),background:bg,textAlign:"center"}}><button className="spring-btn" onClick={()=>toggleExp(group.lote)} style={{background:"none",border:"none",cursor:"pointer",color:ACCENT,padding:"1px 3px",display:"flex"}}>{isExp?<ChevronDown size={14}/>:<ChevronRight size={14}/>}</button></td>
                   <td style={{...TD(false),background:bg,fontWeight:700,color:"#1C1C1E"}}>{group.lote||"—"}</td>
@@ -798,7 +862,8 @@ function StageView({stage,rows,user,onAdvance,onReturn,onComplete,filters,fatura
                   <td style={{...TD(false),background:bg,maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:"#555"}}>{ippnList||"—"}</td>
                   <td style={{...TD(false),background:bg}}>{group.data_bloqueio||"—"}</td>
                   <td style={{...TD(false),background:bg}}>{group.num_cassete||"—"}</td>
-                  <td style={{...TD(false),background:bg}}>{pedidoItem}</td>
+                  <td style={{...TD(false),background:bg}}>{group.pedido||"—"}</td>
+                  <td style={{...TD(false),background:bg}}>{group.item||"—"}</td>
                   <td style={{...TD(false),background:bg}}>{group.material||"—"}</td>
                   <td style={descTd(bg)}>{group.descricao||"—"}</td>
                   <td style={{...TD(false),background:bg}}>{group.ultima_ordem||"—"}</td>
@@ -856,6 +921,7 @@ function SectionHeader({icon:Icon, title, color=ACCENT}){
 // ─────────────────────────────────────────────────────────────────────────────
 function Dashboard({stageData,historyRows,onSelectStage}){
   const [selectedStage,setSelectedStage]=useState(null);
+  const [selectedMotivo,setSelectedMotivo]=useState(null);
   function toggleStageFilter(id){setSelectedStage(s=>s===id?null:id);}
 
   const allActive=Object.values(stageData).flat();
@@ -887,6 +953,20 @@ function Dashboard({stageData,historyRows,onSelectStage}){
     paretoItems.push({label,cnt,cumPct:motivoTotal?Math.round(cum/motivoTotal*100):0});
     if(motivoTotal && cum/motivoTotal>=0.8) break;
   }
+  // If the selected motivo isn't present in the current (stage-filtered) set, ignore it
+  const motivoFilterActive = selectedMotivo && motivoCounts[selectedMotivo];
+
+  // ─ Pedidos/Itens — agregação para a tabela do Dashboard (respeita filtro de etapa + motivo) ─
+  const pedidoItemMap={};
+  filteredRows.forEach(r=>{
+    if(motivoFilterActive && (r.motivo_bloqueio_texto||"").trim()!==selectedMotivo) return;
+    const key=`${(r.pedido||"").trim()}|${(r.item||"").trim()}`;
+    if(!pedidoItemMap[key]) pedidoItemMap[key]={pedido:r.pedido||"—",item:r.item||"—",descricao:r.descricao||"",tubos:0,motivos:new Set()};
+    pedidoItemMap[key].tubos++;
+    if(r.descricao && !pedidoItemMap[key].descricao) pedidoItemMap[key].descricao=r.descricao;
+    if(r.motivo_bloqueio_texto&&r.motivo_bloqueio_texto.trim()) pedidoItemMap[key].motivos.add(r.motivo_bloqueio_texto.trim());
+  });
+  const pedidoItemRows=Object.values(pedidoItemMap).sort((a,b)=>b.tubos-a.tubos);
 
   // ─ Timing stats ─
   const {stageAvg,deptAvg}=computeTimingStats(stageData,historyRows);
@@ -1046,7 +1126,15 @@ function Dashboard({stageData,historyRows,onSelectStage}){
 
       {/* Motivos de Bloqueio — Pareto (80% acumulado) */}
       <div style={{...card,marginBottom:20}}>
-        <SectionHeader icon={PieChart} title={selectedStage!=null?`Motivos de Bloqueio · E${selectedStage}`:"Motivos de Bloqueio"} color="#FF453A"/>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8,marginBottom:14}}>
+          <SectionHeader icon={PieChart} title={selectedStage!=null?`Motivos de Bloqueio · E${selectedStage}`:"Motivos de Bloqueio"} color="#FF453A"/>
+          {motivoFilterActive&&(
+            <button className="spring-btn" onClick={()=>setSelectedMotivo(null)} style={{display:"flex",alignItems:"center",gap:6,background:"rgba(255,69,58,0.10)",color:"#FF453A",border:"none",borderRadius:8,padding:"5px 11px",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+              Filtro: {selectedMotivo}
+              <X size={12} strokeWidth={2.6}/>
+            </button>
+          )}
+        </div>
         {paretoItems.length===0?(
           <div style={{fontSize:13,color:"#8E8E93",textAlign:"center",padding:"12px 0"}}>
             Nenhum motivo de bloqueio registrado para os tubos selecionados
@@ -1057,8 +1145,9 @@ function Dashboard({stageData,historyRows,onSelectStage}){
               const maxCnt=paretoItems[0].cnt;
               const pct=Math.round(it.cnt/maxCnt*100);
               const col=STAGE_COLORS[i%STAGE_COLORS.length];
+              const isSelected=selectedMotivo===it.label;
               return(
-                <div key={it.label} style={{marginBottom:10}}>
+                <div key={it.label} className="spring-btn" onClick={()=>setSelectedMotivo(m=>m===it.label?null:it.label)} title="Filtrar tabela de Pedidos/Itens por este motivo" style={{marginBottom:10,cursor:"pointer",borderRadius:8,padding:"4px 6px",background:isSelected?hexToRgba(col,0.10):"transparent",boxShadow:isSelected?`0 0 0 2px ${hexToRgba(col,0.5)}`:"none",transition:`all 0.25s ${EASE}`}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4,gap:10}}>
                     <span style={{fontSize:11,fontWeight:600,color:"#3A3A3C",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{it.label}</span>
                     <span style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
@@ -1072,9 +1161,51 @@ function Dashboard({stageData,historyRows,onSelectStage}){
                 </div>
               );
             })}
-            <div style={{fontSize:10,color:"#8E8E93",marginTop:8}}>Principais motivos que somam até 80% do total de tubos bloqueados{selectedStage!=null?` na Etapa ${selectedStage}`:""}.</div>
+            <div style={{fontSize:10,color:"#8E8E93",marginTop:8}}>Principais motivos que somam até 80% do total de tubos bloqueados{selectedStage!=null?` na Etapa ${selectedStage}`:""}. Clique em um motivo para filtrar a tabela de Pedidos/Itens abaixo.</div>
           </div>
         )}
+      </div>
+
+      {/* Pedidos / Itens — tabela detalhada, respeita filtros de Etapa e Motivo */}
+      <div style={{...card,marginBottom:20}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8,marginBottom:14}}>
+          <SectionHeader icon={List} title={
+            selectedStage!=null
+              ? (motivoFilterActive?`Pedidos / Itens · E${selectedStage} · ${selectedMotivo}`:`Pedidos / Itens · E${selectedStage}`)
+              : (motivoFilterActive?`Pedidos / Itens · ${selectedMotivo}`:"Pedidos / Itens")
+          } color="#34C759"/>
+        </div>
+        {pedidoItemRows.length===0?(
+          <div style={{fontSize:13,color:"#8E8E93",textAlign:"center",padding:"12px 0"}}>
+            Nenhum pedido/item para os filtros selecionados
+          </div>
+        ):(
+          <div style={{overflowX:"auto",borderRadius:10}}>
+            <table style={{width:"100%",borderCollapse:"collapse",fontSize:11.5}}>
+              <thead>
+                <tr>
+                  <th style={TH}>Pedido</th>
+                  <th style={TH}>Item</th>
+                  <th style={{...TH,minWidth:220}}>Descrição</th>
+                  <th style={TH}>Tubos</th>
+                  <th style={{...TH,minWidth:240}}>Motivos de Bloqueio</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pedidoItemRows.map((r,i)=>(
+                  <tr key={`${r.pedido}|${r.item}|${i}`} style={{background:i%2?"#FAFAFB":"#fff"}}>
+                    <td style={{...TD(i%2===1),fontWeight:700,color:"#1C1C1E"}}>{r.pedido||"—"}</td>
+                    <td style={TD(i%2===1)}>{r.item||"—"}</td>
+                    <td style={TD(i%2===1)}>{r.descricao||"—"}</td>
+                    <td style={TD(i%2===1)}><span style={{background:"#E8F4FD",color:"#1A6FA8",borderRadius:6,padding:"2px 8px",fontSize:11,fontWeight:700}}>{r.tubos}</span></td>
+                    <td style={{...TD(i%2===1),color:"#555"}}>{r.motivos.size?Array.from(r.motivos).join(", "):"—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <div style={{fontSize:10,color:"#8E8E93",marginTop:8}}>Esta tabela acompanha os filtros do "Funil do Processo" e de "Motivos de Bloqueio" acima.</div>
       </div>
 
       {total===0&&concluded===0&&(
@@ -1111,8 +1242,8 @@ function HistoricoPage({historyRows}){
     {key:"ippns",label:"IPPNs",ph:"ex: IPN001"},
   ];
 
-  const histTh = {...TH, minWidth:380};
-  const histTd = (alt)=>({...TD(alt), minWidth:380, padding:"10px 14px"});
+  const histTh = {...TH, minWidth:340};
+  const histTd = (alt)=>({...TD(alt), minWidth:340, padding:"10px 14px"});
 
   return(
     <div style={{...WIDE,paddingTop:20}}>
@@ -1138,11 +1269,11 @@ function HistoricoPage({historyRows}){
         <div>
           <div style={{fontSize:12,color:"#8E8E93",marginBottom:10}}>{groups.length} lote{groups.length!==1?"s":""} · {filtered.length} tubo{filtered.length!==1?"s":""}{hasFilters&&` (filtrado de ${historyRows.length})`}</div>
           <div style={{borderRadius:14,boxShadow:"0 1px 6px rgba(0,0,0,0.05)",background:"#fff",overflowX:"auto",overflowY:"auto",maxHeight:"calc(100vh - 320px)"}}>
-            <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,minWidth:900}}>
+            <table style={{width:"100%",borderCollapse:"collapse",fontSize:11.5,minWidth:900}}>
               <thead>
                 <tr>
                   <th style={{...TH,width:30}}></th>
-                  {["Lote","Tubos","IPPNs","Pedido/Item","Material","Depósito","Motivo Bloqueio","Data Bloqueio","Nº Cassete"].map(h=><th key={h} style={TH}>{h}</th>)}
+                  {["Lote","Tubos","IPPNs","Pedido","Item","Material","Depósito","Motivo Bloqueio","Data Bloqueio","Nº Cassete"].map(h=><th key={h} style={TH}>{h}</th>)}
                   <th style={histTh}>Histórico</th>
                 </tr>
               </thead>
@@ -1157,7 +1288,8 @@ function HistoricoPage({historyRows}){
                       <td style={{...TD(alt),fontWeight:700,color:"#1C1C1E"}}>{group.lote||"—"}</td>
                       <td style={TD(alt)}><span style={{background:"#EDF7EE",color:"#1A7A3A",borderRadius:6,padding:"2px 7px",fontSize:11,fontWeight:700}}>{group.rows.length}</span></td>
                       <td style={{...TD(alt),maxWidth:150,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ippnList||"—"}</td>
-                      <td style={TD(alt)}>{(group.pedido||group.item)?`${group.pedido||"—"}/${group.item||"—"}`:"—"}</td>
+                      <td style={TD(alt)}>{group.pedido||"—"}</td>
+                      <td style={TD(alt)}>{group.item||"—"}</td>
                       <td style={TD(alt)}>{group.material||"—"}</td>
                       <td style={TD(alt)}>{group.deposito_sap||"—"}</td>
                       <td style={TD(alt)}>{group.motivo_bloqueio||"—"}</td>
@@ -1225,6 +1357,27 @@ function ConfigPage({users,setUsers,faturamento,setFaturamento,stageData}){
     });
     return count;
   }
+  // Looks up the product description for a Pedido/Item from any tube currently in the pipeline
+  function lookupDescricao(pedido,item){
+    const p=(pedido||"").trim().toLowerCase(), it=(item||"").trim().toLowerCase();
+    if(!p||!it) return "";
+    for(const arr of Object.values(stageData||{})){
+      for(const r of (arr||[])){
+        if((r.pedido||"").trim().toLowerCase()===p && (r.item||"").trim().toLowerCase()===it && r.descricao) return r.descricao;
+      }
+    }
+    return "";
+  }
+  // Auto-fill "Descrição" as soon as Pedido + Item match a known tube — unless the user already typed one
+  const fatAutoFilledRef = useRef("");
+  useEffect(()=>{
+    const found = lookupDescricao(fatForm.pedido, fatForm.item);
+    if(found && (fatForm.descricao===""||fatForm.descricao===fatAutoFilledRef.current)){
+      fatAutoFilledRef.current = found;
+      setFatForm(f=>({...f,descricao:found}));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[fatForm.pedido,fatForm.item]);
   function addFaturamento(){
     if(!fatForm.pedido||!fatForm.item){setFatError("Informe Pedido e Item.");return;}
     setFaturamento(f=>{
@@ -1232,7 +1385,7 @@ function ConfigPage({users,setUsers,faturamento,setFaturamento,stageData}){
       if(exists) return f;
       return [...f,{id:`fat_${Date.now()}`,pedido:fatForm.pedido.trim(),item:fatForm.item.trim(),descricao:fatForm.descricao.trim()}];
     });
-    setFatForm({pedido:"",item:"",descricao:""});setFatError("");
+    setFatForm({pedido:"",item:"",descricao:""});setFatError("");fatAutoFilledRef.current="";
   }
   function removeFaturamento(id){setFaturamento(f=>f.filter(x=>x.id!==id));}
   async function importFaturamento(file){
@@ -1332,7 +1485,7 @@ function ConfigPage({users,setUsers,faturamento,setFaturamento,stageData}){
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 2fr auto",gap:10,alignItems:"end"}}>
               <div><label style={{fontSize:11,fontWeight:600,color:"#8E8E93",marginBottom:4,display:"block"}}>Pedido *</label><input style={INP} value={fatForm.pedido} onChange={e=>setFatForm(f=>({...f,pedido:e.target.value}))} placeholder="ex: 12000010"/></div>
               <div><label style={{fontSize:11,fontWeight:600,color:"#8E8E93",marginBottom:4,display:"block"}}>Item *</label><input style={INP} value={fatForm.item} onChange={e=>setFatForm(f=>({...f,item:e.target.value}))} placeholder="ex: 10"/></div>
-              <div><label style={{fontSize:11,fontWeight:600,color:"#8E8E93",marginBottom:4,display:"block"}}>Descrição</label><input style={INP} value={fatForm.descricao} onChange={e=>setFatForm(f=>({...f,descricao:e.target.value}))} placeholder="Descrição do produto"/></div>
+              <div><label style={{fontSize:11,fontWeight:600,color:"#8E8E93",marginBottom:4,display:"block"}}>Descrição</label><input style={INP} value={fatForm.descricao} onChange={e=>{fatAutoFilledRef.current="";setFatForm(f=>({...f,descricao:e.target.value}));}} placeholder="Preenchido automaticamente ao informar Pedido/Item"/></div>
               <Btn icon={Plus} onClick={addFaturamento}>Adicionar</Btn>
             </div>
 
@@ -1400,7 +1553,7 @@ function ConfigPage({users,setUsers,faturamento,setFaturamento,stageData}){
 // ─────────────────────────────────────────────────────────────────────────────
 function PipelinePage({stageData,setStageData,user,historyRows,setHistoryRows,showToast,initialStage,faturamento}){
   const [activeStage,setActiveStage]=useState(initialStage||1);
-  const [filters,setFilters]=useState({pedido_item:"",lotes:"",ippns:"",deposito:""});
+  const [filters,setFilters]=useState({pedido:"",item:"",lotes:"",ippns:"",deposito:""});
 
   const hasSearch=Object.values(filters).some(Boolean);
 
@@ -1442,7 +1595,7 @@ function PipelinePage({stageData,setStageData,user,historyRows,setHistoryRows,sh
     <div>
       <PipelineBar stageData={stageData} activeStage={activeStage} onSelectStage={setActiveStage} searchResult={searchResult}/>
       <div style={{...CONTAINER,paddingTop:16,paddingBottom:40}}>
-        <SearchBar filters={filters} onChange={setFilters} onClear={()=>setFilters({pedido_item:"",lotes:"",ippns:"",deposito:""})}/>
+        <SearchBar filters={filters} onChange={setFilters} onClear={()=>setFilters({pedido:"",item:"",lotes:"",ippns:"",deposito:""})}/>
 
         {/* Search results summary */}
         {hasSearch&&searchResult&&(
