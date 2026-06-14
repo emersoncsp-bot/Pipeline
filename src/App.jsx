@@ -270,6 +270,9 @@ function GlobalStyles(){
       ::-webkit-scrollbar-thumb:hover { background: rgba(120,120,128,0.45); }
       details summary::-webkit-details-marker { display: none; }
       details summary { list-style: none; cursor: pointer; }
+      .col-th { cursor: pointer; user-select: none; transition: filter 0.15s ease; }
+      .col-th:hover { filter: brightness(0.94); }
+      .col-th:active { filter: brightness(0.88); }
     `}</style>
   );
 }
@@ -300,24 +303,24 @@ function Btn({children,variant="primary",disabled,onClick,small,icon:Icon,style=
 }
 
 const INP = {width:"100%",border:"1.5px solid #E5E5EA",borderRadius:9,padding:"9px 12px",fontSize:13,outline:"none",background:"#fff",boxSizing:"border-box",fontFamily:FONT};
-const TH = {background:"#ECECF0",padding:"9px 10px",textAlign:"left",fontWeight:700,color:"#5C5C61",borderBottom:`1px solid ${SEPARATOR}`,whiteSpace:"nowrap",fontSize:10,textTransform:"uppercase",letterSpacing:"0.4px",position:"sticky",top:0,zIndex:10};
-const TH_ACCENT = {...TH, background:"#DCEEFF", color:"#0058B8"};
-const TD = (alt)=>({padding:"9px 10px",borderBottom:`1px solid ${SEPARATOR}`,verticalAlign:"middle",fontSize:12,color:"#1C1C1E",background:alt?"#FAFAFB":"#fff"});
+const TH = {background:"#DEDEE3",padding:"8px 10px",textAlign:"left",fontWeight:700,color:"#52525A",borderBottom:`1px solid ${SEPARATOR}`,whiteSpace:"nowrap",fontSize:10,textTransform:"uppercase",letterSpacing:"0.4px",position:"sticky",top:0,zIndex:10};
+const TH_ACCENT = {...TH, background:"#CFE6FF", color:"#0058B8"};
+const TD = (alt)=>({padding:"8px 10px",borderBottom:`1px solid ${SEPARATOR}`,verticalAlign:"middle",fontSize:10,color:"#1C1C1E",background:alt?"#FAFAFB":"#fff"});
 
 // Each history record shown as a 4-line stacked block (stage / definição / usuário / data),
-// with records separated by a vertical divider — "clean" layout, no cards
+// laid out horizontally side by side (one block per stage), separated by a vertical divider
 function HistoryInline({history}){
   if(!history || history.length===0) return <span style={{color:"#C7C7CC",fontSize:11}}>—</span>;
   return(
-    <div style={{display:"flex",alignItems:"stretch",flexWrap:"wrap",gap:0,fontFamily:FONT}}>
+    <div style={{display:"flex",alignItems:"stretch",flexWrap:"nowrap",gap:0,fontFamily:FONT,overflowX:"auto"}}>
       {history.map((h,hi)=>(
-        <div key={hi} style={{display:"flex",alignItems:"stretch"}}>
-          {hi>0&&<div style={{width:1,background:"#E5E5EA",margin:"0 14px"}}/>}
-          <div style={{display:"flex",flexDirection:"column",gap:2,minWidth:150,maxWidth:200}}>
-            <div style={{fontSize:11,fontWeight:800,color:"#1C1C1E",lineHeight:1.35}}>{h.stage}. {h.stageLabel}:</div>
-            <div style={{fontSize:11,fontWeight:600,color:ACCENT,lineHeight:1.35,wordBreak:"break-word"}}>{renderTratativaValue(h.tratativa)}</div>
-            <div style={{fontSize:10.5,color:"#6B6B6B",lineHeight:1.35}}>{h.user}</div>
-            <div style={{fontSize:10,color:"#C7C7CC",lineHeight:1.35}}>{h.date}</div>
+        <div key={hi} style={{display:"flex",alignItems:"stretch",flexShrink:0}}>
+          {hi>0&&<div style={{width:1,background:"#E5E5EA",margin:"0 14px",flexShrink:0}}/>}
+          <div style={{display:"flex",flexDirection:"column",gap:2,minWidth:150,maxWidth:200,flexShrink:0}}>
+            <div style={{fontSize:11,fontWeight:800,color:"#1C1C1E",lineHeight:1.35,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{h.stage}. {h.stageLabel}:</div>
+            <div style={{fontSize:11,fontWeight:600,color:ACCENT,lineHeight:1.35,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{renderTratativaValue(h.tratativa)}</div>
+            <div style={{fontSize:10.5,color:"#6B6B6B",lineHeight:1.35,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{h.user}</div>
+            <div style={{fontSize:10,color:"#C7C7CC",lineHeight:1.35,whiteSpace:"nowrap"}}>{h.date}</div>
           </div>
         </div>
       ))}
@@ -527,21 +530,21 @@ function TopBar({title,subtitle,user,onLogoutClick}){
     <div style={{
       position:"sticky", top:0, zIndex:40,
       background:HEADER_GLASS, backdropFilter:"blur(20px) saturate(180%)", WebkitBackdropFilter:"blur(20px) saturate(180%)",
-      borderBottom:`1px solid ${SEPARATOR}`, padding:"16px 28px", fontFamily:FONT,
+      borderBottom:`1px solid ${SEPARATOR}`, padding:"10px 28px", fontFamily:FONT,
       display:"flex", alignItems:"center", justifyContent:"space-between", gap:16,
     }}>
       <div>
-        <div style={{fontSize:26,fontWeight:800,color:"#1C1C1E",letterSpacing:"-0.5px",fontFamily:TITLE_FONT}}>{title}</div>
-        {subtitle&&<div style={{fontSize:12.5,color:"#8E8E93",marginTop:2}}>{subtitle}</div>}
+        <div style={{fontSize:18,fontWeight:800,color:"#1C1C1E",letterSpacing:"-0.3px",fontFamily:TITLE_FONT}}>{title}</div>
+        {subtitle&&<div style={{fontSize:11,color:"#8E8E93",marginTop:1}}>{subtitle}</div>}
       </div>
-      <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
+      <div style={{display:"flex",alignItems:"center",gap:9,flexShrink:0}}>
         <div style={{textAlign:"right"}}>
-          <div style={{fontSize:13,fontWeight:700,color:"#1C1C1E",lineHeight:1.3}}>{user.name}</div>
-          <div style={{fontSize:11,color:"#8E8E93",lineHeight:1.3}}>{DEPT_FULL[user.dept]||user.dept}</div>
+          <div style={{fontSize:11.5,fontWeight:700,color:"#1C1C1E",lineHeight:1.25}}>{user.name}</div>
+          <div style={{fontSize:10,color:"#8E8E93",lineHeight:1.25}}>{DEPT_FULL[user.dept]||user.dept}</div>
         </div>
-        <div style={{width:34,height:34,borderRadius:"50%",background:`linear-gradient(135deg,${ACCENT},#5AC8FA)`,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:13,fontWeight:700,flexShrink:0}}>{user.name.charAt(0)}</div>
-        <button className="spring-btn" onClick={onLogoutClick} title="Sair" style={{background:"#F2F2F7",border:"none",cursor:"pointer",color:"#8E8E93",padding:8,borderRadius:9,display:"flex"}}>
-          <LogOut size={16} strokeWidth={2.2}/>
+        <div style={{width:28,height:28,borderRadius:"50%",background:`linear-gradient(135deg,${ACCENT},#5AC8FA)`,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:11.5,fontWeight:700,flexShrink:0}}>{user.name.charAt(0)}</div>
+        <button className="spring-btn" onClick={onLogoutClick} title="Sair" style={{background:"#F2F2F7",border:"none",cursor:"pointer",color:"#8E8E93",padding:7,borderRadius:8,display:"flex"}}>
+          <LogOut size={14} strokeWidth={2.2}/>
         </button>
       </div>
     </div>
@@ -673,7 +676,7 @@ function ImportStep({onImport}){
 // ─────────────────────────────────────────────────────────────────────────────
 // STAGE VIEW
 // ─────────────────────────────────────────────────────────────────────────────
-function StageView({stage,rows,user,onAdvance,onReturn,onComplete,filters,faturamento}){
+function StageView({stage,rows,user,onAdvance,onReturn,onComplete,filters,faturamento,showToast}){
   const [selLotes,setSelLotes]=useState(new Set());
   const [tratativas,setTratativas]=useState({});
   const [expanded,setExpanded]=useState(new Set());
@@ -725,6 +728,44 @@ function StageView({stage,rows,user,onAdvance,onReturn,onComplete,filters,fatura
     const v = tratativas[group.lote] ?? group.tratativa;
     if(Array.isArray(v)) return v.length===0;
     return !v || !String(v).trim();
+  }
+
+  // Column value extractor — used for "click header to copy column" (paste into Excel)
+  function colValue(group,key){
+    switch(key){
+      case "lote": return group.lote||"";
+      case "tubos": return String(group.rows.length);
+      case "ippns": return group.rows.map(r=>r.ippn).filter(Boolean).join(", ");
+      case "data_bloqueio": return group.data_bloqueio||"";
+      case "num_cassete": return group.num_cassete||"";
+      case "pedido": return group.pedido||"";
+      case "item": return group.item||"";
+      case "material": return group.material||"";
+      case "descricao": return group.descricao||"";
+      case "ultima_ordem": return group.ultima_ordem||"";
+      case "qualidade_qts": return group.qualidade_qts||"";
+      case "deposito_sap": return group.deposito_sap||"";
+      case "motivo_bloqueio": return group.motivo_bloqueio||"";
+      case "motivo_bloqueio_texto": return group.motivo_bloqueio_texto||"";
+      case "razao_bloq": return group.razao_bloq||"";
+      case "descricao_motivo": return group.descricao_motivo||"";
+      case "definicao": return renderTratativaValue(tratativas[group.lote] ?? group.tratativa);
+      default: return "";
+    }
+  }
+  // Copies an entire column's values (one per row, newline-separated) to the clipboard,
+  // so it can be pasted directly as a column in Excel
+  function copyColumn(key,label){
+    const values=groups.map(g=>colValue(g,key));
+    const text=values.join("\n");
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text)
+        .then(()=>showToast&&showToast(`Coluna "${label}" copiada (${values.length} valor${values.length!==1?"es":""})`))
+        .catch(()=>showToast&&showToast(`Não foi possível copiar a coluna "${label}"`));
+    }
+  }
+  function colTh(label,key,baseStyle=TH){
+    return <th className="col-th" style={baseStyle} onClick={()=>copyColumn(key,label)} title={`Clique para copiar a coluna "${label}" (colar no Excel)`}>{label}</th>;
   }
 
   function buildMoved(loteSet){
@@ -816,28 +857,28 @@ function StageView({stage,rows,user,onAdvance,onReturn,onComplete,filters,fatura
 
       {/* Table */}
       <div style={{borderRadius:14,boxShadow:"0 1px 6px rgba(0,0,0,0.05)",background:"#fff",overflowX:"auto",overflowY:"auto",maxHeight:"calc(100vh - 280px)",minHeight:180}}>
-        <table style={{width:"100%",borderCollapse:"collapse",fontSize:11.5,minWidth:1380}}>
+        <table style={{width:"100%",borderCollapse:"collapse",fontSize:10,minWidth:1380,userSelect:"none",WebkitUserSelect:"none"}}>
           <thead>
             <tr>
               {canInteract&&<th style={stickyTh}><input type="checkbox" style={{accentColor:ACCENT,cursor:"pointer",width:15,height:15}} checked={selLotes.size===groups.length&&groups.length>0} onChange={e=>toggleAll(e.target.checked)}/></th>}
               <th style={{...TH,width:30}}><ChevronRight size={12}/></th>
-              <th style={TH}>Lote</th>
-              <th style={TH}>Tubos</th>
-              <th style={TH}>IPPNs</th>
-              <th style={TH}>Data Bloqueio</th>
-              <th style={TH}>Nº Cassete</th>
-              <th style={TH}>Pedido</th>
-              <th style={TH}>Item</th>
-              <th style={TH}>Material</th>
-              <th style={descTh}>Descrição</th>
-              <th style={TH}>Última Ordem</th>
-              <th style={TH}>Qualidade QTS</th>
-              <th style={TH}>Depósito SAP</th>
-              <th style={TH}>Motivo Bloqueio</th>
-              <th style={TH}>Motivo Bloqueio Texto</th>
-              <th style={TH}>Razão Bloq.</th>
-              <th style={TH}>Descrição Motivo</th>
-              <th style={TH_ACCENT}>Definição</th>
+              {colTh("Lote","lote")}
+              {colTh("Tubos","tubos")}
+              {colTh("IPPNs","ippns")}
+              {colTh("Data Bloqueio","data_bloqueio")}
+              {colTh("Nº Cassete","num_cassete")}
+              {colTh("Pedido","pedido")}
+              {colTh("Item","item")}
+              {colTh("Material","material")}
+              {colTh("Descrição","descricao",descTh)}
+              {colTh("Última Ordem","ultima_ordem")}
+              {colTh("Qualidade QTS","qualidade_qts")}
+              {colTh("Depósito SAP","deposito_sap")}
+              {colTh("Motivo Bloqueio","motivo_bloqueio")}
+              {colTh("Motivo Bloqueio Texto","motivo_bloqueio_texto")}
+              {colTh("Razão Bloq.","razao_bloq")}
+              {colTh("Descrição Motivo","descricao_motivo")}
+              {colTh("Definição","definicao",TH_ACCENT)}
               {stage.id>1&&<th style={histTh}>Histórico</th>}
             </tr>
           </thead>
@@ -849,12 +890,12 @@ function StageView({stage,rows,user,onAdvance,onReturn,onComplete,filters,fatura
               const ippnList=group.rows.map(r=>r.ippn).filter(Boolean).join(", ");
               const alt=gi%2===1;
               const fat=isFaturado(group);
-              const bg=isSel?"#DCEEFF":(fat?"rgba(255,69,58,0.07)":(alt?"#FAFAFB":"#fff"));
+              const bg=isSel?"#DCEEFF":(fat?"#FFE6E4":(alt?"#FAFAFB":"#fff"));
               const currentTratValue = tratativas[group.lote] ?? group.tratativa;
 
               return[
                 <tr key={`g-${group.lote}`} style={{background:bg}}>
-                  {canInteract&&<td style={stickyTd(bg)}><input type="checkbox" style={{accentColor:ACCENT,cursor:"pointer",width:15,height:15}} checked={isSel} onChange={e=>toggleSel(group.lote,gi,e.nativeEvent.shiftKey)}/></td>}
+                  {canInteract&&<td style={stickyTd(bg)}><input type="checkbox" style={{accentColor:ACCENT,cursor:"pointer",width:15,height:15}} checked={isSel} onChange={()=>{}} onClick={e=>{e.preventDefault();toggleSel(group.lote,gi,e.shiftKey);}}/></td>}
                   {/* Expand IPPNs */}
                   <td style={{...TD(false),background:bg,textAlign:"center"}}><button className="spring-btn" onClick={()=>toggleExp(group.lote)} style={{background:"none",border:"none",cursor:"pointer",color:ACCENT,padding:"1px 3px",display:"flex"}}>{isExp?<ChevronDown size={14}/>:<ChevronRight size={14}/>}</button></td>
                   <td style={{...TD(false),background:bg,fontWeight:700,color:"#1C1C1E"}}>{group.lote||"—"}</td>
@@ -922,6 +963,8 @@ function SectionHeader({icon:Icon, title, color=ACCENT}){
 function Dashboard({stageData,historyRows,onSelectStage}){
   const [selectedStage,setSelectedStage]=useState(null);
   const [selectedMotivo,setSelectedMotivo]=useState(null);
+  const [piSearchPedido,setPiSearchPedido]=useState("");
+  const [piSearchItem,setPiSearchItem]=useState("");
   function toggleStageFilter(id){setSelectedStage(s=>s===id?null:id);}
 
   const allActive=Object.values(stageData).flat();
@@ -966,7 +1009,12 @@ function Dashboard({stageData,historyRows,onSelectStage}){
     if(r.descricao && !pedidoItemMap[key].descricao) pedidoItemMap[key].descricao=r.descricao;
     if(r.motivo_bloqueio_texto&&r.motivo_bloqueio_texto.trim()) pedidoItemMap[key].motivos.add(r.motivo_bloqueio_texto.trim());
   });
-  const pedidoItemRows=Object.values(pedidoItemMap).sort((a,b)=>b.tubos-a.tubos);
+  let pedidoItemRows=Object.values(pedidoItemMap).sort((a,b)=>b.tubos-a.tubos);
+  if(piSearchPedido.trim()||piSearchItem.trim()){
+    const tP=parseTokens(piSearchPedido), tI=parseTokens(piSearchItem);
+    const match=(tokens,val)=>!tokens.length||tokens.some(t=>String(val||"").toLowerCase().includes(t));
+    pedidoItemRows=pedidoItemRows.filter(r=>match(tP,r.pedido)&&match(tI,r.item));
+  }
 
   // ─ Timing stats ─
   const {stageAvg,deptAvg}=computeTimingStats(stageData,historyRows);
@@ -1174,6 +1222,10 @@ function Dashboard({stageData,historyRows,onSelectStage}){
               ? (motivoFilterActive?`Pedidos / Itens · E${selectedStage} · ${selectedMotivo}`:`Pedidos / Itens · E${selectedStage}`)
               : (motivoFilterActive?`Pedidos / Itens · ${selectedMotivo}`:"Pedidos / Itens")
           } color="#34C759"/>
+          <div style={{display:"flex",gap:8}}>
+            <input value={piSearchPedido} onChange={e=>setPiSearchPedido(e.target.value)} placeholder="Pedido" style={{width:120,border:"1.5px solid #E5E5EA",borderRadius:9,padding:"6px 10px",fontSize:12,outline:"none",background:"#FAFAFB",boxSizing:"border-box",fontFamily:FONT}}/>
+            <input value={piSearchItem} onChange={e=>setPiSearchItem(e.target.value)} placeholder="Item" style={{width:100,border:"1.5px solid #E5E5EA",borderRadius:9,padding:"6px 10px",fontSize:12,outline:"none",background:"#FAFAFB",boxSizing:"border-box",fontFamily:FONT}}/>
+          </div>
         </div>
         {pedidoItemRows.length===0?(
           <div style={{fontSize:13,color:"#8E8E93",textAlign:"center",padding:"12px 0"}}>
@@ -1181,7 +1233,7 @@ function Dashboard({stageData,historyRows,onSelectStage}){
           </div>
         ):(
           <div style={{overflowX:"auto",borderRadius:10}}>
-            <table style={{width:"100%",borderCollapse:"collapse",fontSize:11.5}}>
+            <table style={{width:"100%",borderCollapse:"collapse",fontSize:10}}>
               <thead>
                 <tr>
                   <th style={TH}>Pedido</th>
@@ -1269,7 +1321,7 @@ function HistoricoPage({historyRows}){
         <div>
           <div style={{fontSize:12,color:"#8E8E93",marginBottom:10}}>{groups.length} lote{groups.length!==1?"s":""} · {filtered.length} tubo{filtered.length!==1?"s":""}{hasFilters&&` (filtrado de ${historyRows.length})`}</div>
           <div style={{borderRadius:14,boxShadow:"0 1px 6px rgba(0,0,0,0.05)",background:"#fff",overflowX:"auto",overflowY:"auto",maxHeight:"calc(100vh - 320px)"}}>
-            <table style={{width:"100%",borderCollapse:"collapse",fontSize:11.5,minWidth:900}}>
+            <table style={{width:"100%",borderCollapse:"collapse",fontSize:10,minWidth:900}}>
               <thead>
                 <tr>
                   <th style={{...TH,width:30}}></th>
@@ -1619,6 +1671,7 @@ function PipelinePage({stageData,setStageData,user,historyRows,setHistoryRows,sh
               onComplete={activeStage===8?handleComplete:null}
               filters={filters}
               faturamento={faturamento}
+              showToast={showToast}
             />
             {activeStage===1&&stageData[1].length>0&&(
               <div style={{marginTop:14}}>
