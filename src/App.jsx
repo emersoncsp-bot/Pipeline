@@ -6,7 +6,7 @@ import {
   ChevronRight, ChevronDown, ArrowRight, ArrowLeft, CheckCircle2,
   Upload, LogOut, Plus, Pencil, Trash2, Shield, Users, Inbox,
   Clock, AlertTriangle, RotateCcw, Loader2, Layers,
-  BarChart3, Package, Building2, Receipt, PieChart, X, List,
+  BarChart3, Package, Building2, Receipt, PieChart, X, List, Maximize2, Minimize2,
 } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -308,22 +308,28 @@ const TH_ACCENT = {...TH, background:"#CFE6FF", color:"#0058B8"};
 const TD = (alt)=>({padding:"8px 10px",borderBottom:`1px solid ${SEPARATOR}`,verticalAlign:"middle",fontSize:10,color:"#1C1C1E",background:alt?"#FAFAFB":"#fff"});
 
 // Each history record shown as a 4-line stacked block (stage / definição / usuário / data),
-// laid out horizontally side by side (one block per stage), separated by a vertical divider
+// laid out horizontally side by side (one block per stage), separated by a vertical divider.
+// Each block is individually resizable (drag the bottom-right corner) so long text isn't cut off,
+// and truncated lines show the full text on hover via the native title tooltip.
 function HistoryInline({history}){
   if(!history || history.length===0) return <span style={{color:"#C7C7CC",fontSize:10}}>—</span>;
   return(
     <div style={{display:"flex",alignItems:"stretch",flexWrap:"nowrap",gap:0,fontFamily:FONT,overflowX:"auto"}}>
-      {history.map((h,hi)=>(
-        <div key={hi} style={{display:"flex",alignItems:"stretch",flexShrink:0}}>
-          {hi>0&&<div style={{width:1,background:"#E5E5EA",margin:"0 14px",flexShrink:0}}/>}
-          <div style={{display:"flex",flexDirection:"column",gap:2,minWidth:150,maxWidth:200,flexShrink:0}}>
-            <div style={{fontSize:10,fontWeight:400,color:"#1C1C1E",lineHeight:1.35,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{h.stage}. {h.stageLabel}:</div>
-            <div style={{fontSize:10,fontWeight:600,color:ACCENT,lineHeight:1.35,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{renderTratativaValue(h.tratativa)}</div>
-            <div style={{fontSize:10,color:"#6B6B6B",lineHeight:1.35,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{h.user}</div>
-            <div style={{fontSize:10,color:"#C7C7CC",lineHeight:1.35,whiteSpace:"nowrap"}}>{h.date}</div>
+      {history.map((h,hi)=>{
+        const tratativaText = renderTratativaValue(h.tratativa);
+        const stageText = `${h.stage}. ${h.stageLabel}:`;
+        return(
+          <div key={hi} style={{display:"flex",alignItems:"stretch",flexShrink:0}}>
+            {hi>0&&<div style={{width:1,background:"#E5E5EA",margin:"0 14px",flexShrink:0}}/>}
+            <div style={{display:"flex",flexDirection:"column",gap:2,width:170,minWidth:90,maxWidth:480,resize:"horizontal",overflow:"hidden",flexShrink:0,paddingRight:6}}>
+              <div title={stageText} style={{fontSize:10,fontWeight:400,color:"#1C1C1E",lineHeight:1.35,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{stageText}</div>
+              <div title={tratativaText} style={{fontSize:10,fontWeight:600,color:ACCENT,lineHeight:1.35,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{tratativaText}</div>
+              <div title={h.user} style={{fontSize:10,color:"#6B6B6B",lineHeight:1.35,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{h.user}</div>
+              <div style={{fontSize:10,color:"#C7C7CC",lineHeight:1.35,whiteSpace:"nowrap"}}>{h.date}</div>
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -697,7 +703,16 @@ function StageView({stage,rows,user,onAdvance,onReturn,onComplete,filters,fatura
 
   const [filterFat,setFilterFat]=useState(false);
   const [defError,setDefError]=useState("");
+  const [fullscreen,setFullscreen]=useState(false);
   const lastCheckedRef=useRef(null);
+
+  // Esc exits fullscreen table view
+  useEffect(()=>{
+    if(!fullscreen) return;
+    function onKey(e){ if(e.key==="Escape") setFullscreen(false); }
+    window.addEventListener("keydown",onKey);
+    return ()=>window.removeEventListener("keydown",onKey);
+  },[fullscreen]);
 
   const allGroups = groupByLote(rows);
   // Search also filters the table itself (not just the pipeline badge counts)
@@ -846,8 +861,9 @@ function StageView({stage,rows,user,onAdvance,onReturn,onComplete,filters,fatura
 
   return(
     <div>
+      <div style={fullscreen ? {position:"fixed",inset:12,zIndex:300,background:APP_BG,borderRadius:16,padding:16,boxShadow:"0 24px 70px rgba(0,0,0,0.3)",display:"flex",flexDirection:"column",boxSizing:"border-box",overflow:"hidden"} : {}}>
       {/* Top bar */}
-      <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:14,flexWrap:"wrap",gap:10}}>
+      <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:14,flexWrap:"wrap",gap:10,flexShrink:0}}>
         <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
           <DeptTag dept={stage.dept}/>
           <span style={{fontSize:11,color:"#8E8E93"}}>{groups.length} lote{groups.length!==1?"s":""} · {displayedTubos} tubo{displayedTubos!==1?"s":""}</span>
@@ -861,19 +877,20 @@ function StageView({stage,rows,user,onAdvance,onReturn,onComplete,filters,fatura
           )}
         </div>
         {/* Action buttons */}
-        {canInteract&&(
-          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
+          {canInteract&&(<>
             {stage.id>1&&onReturn&&<Btn small variant="warning" icon={ArrowLeft} disabled={selLotes.size===0} onClick={()=>setConfirmRet(true)}>Retornar: {prevStage?.short}</Btn>}
             {!isStage8&&<Btn small icon={ArrowRight} disabled={selLotes.size===0} onClick={tryAdvance}>{nextStage?.short} ({selLotesCount})</Btn>}
             {isStage8&&<Btn small variant="danger" icon={CheckCircle2} disabled={selLotes.size===0} onClick={tryComplete}>Concluir ({selLotesCount})</Btn>}
-          </div>
-        )}
+          </>)}
+          <Btn small variant="secondary" icon={fullscreen?Minimize2:Maximize2} onClick={()=>setFullscreen(f=>!f)} title={fullscreen?"Sair da tela cheia (Esc)":"Ver tabela em tela cheia"}>{fullscreen?"Sair":"Tela cheia"}</Btn>
+        </div>
       </div>
 
-      {defError&&<div style={{display:"flex",alignItems:"center",gap:6,color:"#FF453A",background:"#FFF2F0",borderRadius:10,padding:"8px 12px",marginBottom:12,fontSize:12,fontWeight:600}}><AlertTriangle size={13}/>{defError}</div>}
+      {defError&&<div style={{display:"flex",alignItems:"center",gap:6,color:"#FF453A",background:"#FFF2F0",borderRadius:10,padding:"8px 12px",marginBottom:12,fontSize:12,fontWeight:600,flexShrink:0}}><AlertTriangle size={13}/>{defError}</div>}
 
       {/* Table */}
-      <div style={{borderRadius:14,boxShadow:"0 1px 6px rgba(0,0,0,0.05)",background:"#fff",overflowX:"auto",overflowY:"auto",maxHeight:"calc(100vh - 280px)",minHeight:180}}>
+      <div style={{borderRadius:14,boxShadow:"0 1px 6px rgba(0,0,0,0.05)",background:"#fff",overflowX:"auto",overflowY:"auto",maxHeight:fullscreen?"none":"calc(100vh - 280px)",flex:fullscreen?1:"initial",minHeight:180,minWidth:340,resize:fullscreen?"none":"horizontal"}}>
         <table style={{width:"100%",borderCollapse:"collapse",fontSize:10,minWidth:1380}}>
           <thead>
             <tr>
@@ -952,6 +969,7 @@ function StageView({stage,rows,user,onAdvance,onReturn,onComplete,filters,fatura
             })}
           </tbody>
         </table>
+      </div>
       </div>
 
       {/* Confirm modals */}
