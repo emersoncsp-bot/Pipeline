@@ -6,7 +6,7 @@ import {
   ChevronRight, ChevronDown, ArrowRight, ArrowLeft, CheckCircle2,
   Upload, LogOut, Plus, Pencil, Trash2, Shield, Users, Inbox,
   Clock, AlertTriangle, RotateCcw, Loader2, Layers,
-  BarChart3, Package, Building2, Receipt, PieChart, X, List, Maximize2, Minimize2,
+  BarChart3, Package, Building2, Receipt, PieChart, X, List, Maximize2, Minimize2, TrendingUp,
 } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -20,7 +20,7 @@ const STAGES = [
   { id:5, label:"Liberação para Vínculo", short:"Desbloqueio",          dept:"CQ Lib. Intermediária" },
   { id:6, label:"Vínculo dos Lotes",      short:"Vínculo",              dept:"Planejamento UAP" },
   { id:7, label:"Ativação de Flag",       short:"Flag",                 dept:"CQ Lib. Intermediária" },
-  { id:8, label:"Pendente Execução",      short:"Execução",             dept:"CQ Lib. Intermediária" },
+  { id:8, label:"Pendente Execução",      short:"Execução",             dept:"Planejamento UAP" },
 ];
 
 const STAGE_COLORS = ["#0A84FF","#34C759","#FF9F0A","#AF52DE","#FF2D55","#5AC8FA","#FF6B35","#8E8E93"];
@@ -44,16 +44,16 @@ const DEPT_COLORS = {
 // Default stage permissions per dept key
 const DEPT_DEFAULT_STAGES = {
   "CQ Área Técnica":       [1,4],
-  "Planejamento UAP":      [2,6],
+  "Planejamento UAP":      [2,6,8],
   "Planejamento Central":  [3],
-  "CQ Lib. Intermediária": [5,7,8],
+  "CQ Lib. Intermediária": [5,7],
   "Admin":                 [1,2,3,4,5,6,7,8],
 };
 
 const DEFAULT_USERS = [
   { id:"u1", email:"qualidade.tecnica@empresa.com", password:"123456", name:"Ana Paula Silva",  dept:"CQ Área Técnica",       allowedStages:[1,4],     active:true },
-  { id:"u2", email:"qualidade.lib@empresa.com",     password:"123456", name:"Carlos Mendes",    dept:"CQ Lib. Intermediária", allowedStages:[5,7,8],   active:true },
-  { id:"u3", email:"planejamento.uap@empresa.com",  password:"123456", name:"Fernanda Rocha",   dept:"Planejamento UAP",      allowedStages:[2,6],     active:true },
+  { id:"u2", email:"qualidade.lib@empresa.com",     password:"123456", name:"Carlos Mendes",    dept:"CQ Lib. Intermediária", allowedStages:[5,7],     active:true },
+  { id:"u3", email:"planejamento.uap@empresa.com",  password:"123456", name:"Fernanda Rocha",   dept:"Planejamento UAP",      allowedStages:[2,6,8],   active:true },
   { id:"u4", email:"planejamento.central@empresa.com",password:"123456",name:"Ricardo Alves",   dept:"Planejamento Central",  allowedStages:[3],       active:true },
   { id:"u5", email:"admin@empresa.com",             password:"admin",  name:"Administrador",    dept:"Admin",                 allowedStages:[1,2,3,4,5,6,7,8], active:true },
 ];
@@ -203,6 +203,14 @@ function formatDuration(ms) {
   return `${val} ${num===1?"dia":"dias"}`;
 }
 
+// Parse "DD/MM/AAAA" → Date (or null if invalid/empty)
+function parseDateBR(s){
+  const m = String(s||"").match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if(!m) return null;
+  const d = new Date(Number(m[3]), Number(m[2])-1, Number(m[1]));
+  return isNaN(d.getTime()) ? null : d;
+}
+
 // Compute average time spent at each stage from history
 function computeTimingStats(stageData, historyRows) {
   const allRows = [...Object.values(stageData).flat(), ...historyRows];
@@ -284,7 +292,11 @@ function GlobalStyles(){
 function Toast({msg}){ if(!msg)return null; return(<div style={{position:"fixed",bottom:28,left:"50%",transform:"translateX(-50%)",background:"rgba(28,28,30,0.92)",backdropFilter:"blur(12px)",color:"#fff",borderRadius:14,padding:"12px 22px",fontSize:14,fontWeight:500,zIndex:500,boxShadow:"0 10px 30px rgba(0,0,0,0.25)",display:"flex",alignItems:"center",gap:8,whiteSpace:"nowrap",pointerEvents:"none",fontFamily:FONT}}><CheckCircle2 size={16} color="#34C759"/>{msg}</div>); }
 
 function Modal({title,body,onConfirm,onCancel,confirmLabel="Confirmar",danger=false,children}){
-  return(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",backdropFilter:"blur(2px)",zIndex:400,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={onCancel}><div style={{background:SURFACE,borderRadius:18,padding:"28px 28px 24px",maxWidth:480,width:"100%",boxShadow:"0 28px 70px rgba(0,0,0,0.25)",fontFamily:FONT}} onClick={e=>e.stopPropagation()}><div style={{fontSize:19,fontWeight:800,color:"#1C1C1E",marginBottom:8,fontFamily:TITLE_FONT,letterSpacing:"-0.3px"}}>{title}</div>{body&&<div style={{fontSize:14,color:"#3A3A3C",marginBottom:children?12:22,lineHeight:1.65}}>{body}</div>}{children&&<div style={{marginBottom:20}}>{children}</div>}<div style={{display:"flex",gap:10,justifyContent:"flex-end"}}><button className="spring-btn" style={{background:"#F2F2F7",color:ACCENT,border:"none",borderRadius:12,padding:"11px 22px",fontSize:14,fontWeight:600,cursor:"pointer"}} onClick={onCancel}>Cancelar</button><button className="spring-btn" style={{background:danger?"linear-gradient(135deg,#FF453A,#C0392B)":`linear-gradient(135deg,${ACCENT},#0051D4)`,color:"#fff",border:"none",borderRadius:12,padding:"11px 22px",fontSize:14,fontWeight:600,cursor:"pointer"}} onClick={onConfirm}>{confirmLabel}</button></div></div></div>);
+  const isDelete = /excluir/i.test(confirmLabel);
+  const confirmStyle = isDelete
+    ? {background:"#FDE2E2",color:"#FF3B30"}
+    : {background:danger?"linear-gradient(135deg,#FF453A,#C0392B)":`linear-gradient(135deg,${ACCENT},#0051D4)`,color:"#fff"};
+  return(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",backdropFilter:"blur(2px)",zIndex:400,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={onCancel}><div style={{background:SURFACE,borderRadius:18,padding:"28px 28px 24px",maxWidth:480,width:"100%",boxShadow:"0 28px 70px rgba(0,0,0,0.25)",fontFamily:FONT}} onClick={e=>e.stopPropagation()}><div style={{fontSize:19,fontWeight:800,color:"#1C1C1E",marginBottom:8,fontFamily:TITLE_FONT,letterSpacing:"-0.3px"}}>{title}</div>{body&&<div style={{fontSize:14,color:"#3A3A3C",marginBottom:children?12:22,lineHeight:1.65}}>{body}</div>}{children&&<div style={{marginBottom:20}}>{children}</div>}<div style={{display:"flex",gap:10,justifyContent:"flex-end"}}><button className="spring-btn" style={{background:"#F2F2F7",color:ACCENT,border:"none",borderRadius:12,padding:"11px 22px",fontSize:14,fontWeight:600,cursor:"pointer"}} onClick={onCancel}>Cancelar</button><button className="spring-btn" style={{...confirmStyle,border:"none",borderRadius:12,padding:"11px 22px",fontSize:14,fontWeight:600,cursor:"pointer"}} onClick={onConfirm}>{confirmLabel}</button></div></div></div>);
 }
 
 function DeptTag({dept}){
@@ -297,6 +309,7 @@ function Btn({children,variant="primary",disabled,onClick,small,icon:Icon,style=
     primary:{background:`linear-gradient(135deg,${ACCENT},#0060DF)`,color:"#fff"},
     secondary:{background:"#F2F2F7",color:ACCENT},
     danger:{background:"linear-gradient(135deg,#FF453A,#C0392B)",color:"#fff"},
+    delete:{background:"#FDE2E2",color:"#FF3B30"},
     warning:{background:"linear-gradient(135deg,#FF9F0A,#E8890A)",color:"#fff"},
     ghost:{background:"transparent",color:ACCENT},
   };
@@ -1038,6 +1051,134 @@ function SectionHeader({icon:Icon, title, color=ACCENT}){
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// DONUT CHART — used for "Bloqueio por Depósito"
+// ─────────────────────────────────────────────────────────────────────────────
+function DonutChart({data,size=150,thickness=24}){
+  const total=data.reduce((s,d)=>s+d.value,0)||1;
+  const r=(size-thickness)/2;
+  const C=2*Math.PI*r;
+  let acc=0;
+  return(
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{flexShrink:0}}>
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#F2F2F7" strokeWidth={thickness}/>
+      <g transform={`rotate(-90 ${size/2} ${size/2})`}>
+        {data.map((d,i)=>{
+          const frac=d.value/total;
+          const len=Math.max(frac*C-1,0); // small gap between segments
+          const dasharray=`${len} ${C-len}`;
+          const dashoffset=-acc;
+          acc+=frac*C;
+          return <circle key={i} cx={size/2} cy={size/2} r={r} fill="none" stroke={d.color} strokeWidth={thickness} strokeDasharray={dasharray} strokeDashoffset={dashoffset} strokeLinecap="butt"/>;
+        })}
+      </g>
+      <text x={size/2} y={size/2-4} textAnchor="middle" style={{fontSize:24,fontWeight:900,fill:"#1C1C1E",fontFamily:TITLE_FONT}}>{total}</text>
+      <text x={size/2} y={size/2+14} textAnchor="middle" style={{fontSize:9,fontWeight:600,fill:"#8E8E93"}}>tubos</text>
+    </svg>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BLOQUEIO ACUMULADO POR DIA — line chart with "Geral" / "Por Depósito" toggle
+// ─────────────────────────────────────────────────────────────────────────────
+function AccumulatedBlockChart({rows}){
+  const [mode,setMode]=useState("geral");
+
+  const dated=rows.map(r=>({...r,_d:parseDateBR(r.data_bloqueio)})).filter(r=>r._d);
+  const allDates=Array.from(new Set(dated.map(r=>r._d.getTime()))).sort((a,b)=>a-b);
+
+  if(allDates.length===0){
+    return(
+      <div style={{fontSize:13,color:"#8E8E93",textAlign:"center",padding:"12px 0"}}>
+        Nenhuma data de bloqueio registrada para exibir o acumulado
+      </div>
+    );
+  }
+
+  let series=[]; // [{label,color,pts:[{t,value}]}]
+  if(mode==="geral"){
+    const counts={};
+    dated.forEach(r=>{const t=r._d.getTime();counts[t]=(counts[t]||0)+1;});
+    let cum=0;
+    const pts=allDates.map(t=>{cum+=counts[t]||0;return{t,value:cum};});
+    series=[{label:"Total",color:ACCENT,pts}];
+  } else {
+    const depGroups={};
+    dated.forEach(r=>{
+      const dep=r.deposito_sap||"Sem Depósito";
+      if(!depGroups[dep]) depGroups[dep]={};
+      const t=r._d.getTime();
+      depGroups[dep][t]=(depGroups[dep][t]||0)+1;
+    });
+    const depTotals=Object.entries(depGroups).map(([dep,counts])=>[dep,Object.values(counts).reduce((a,b)=>a+b,0)]).sort((a,b)=>b[1]-a[1]);
+    series=depTotals.slice(0,6).map(([dep],i)=>{
+      let cum=0;
+      const pts=allDates.map(t=>{cum+=depGroups[dep][t]||0;return{t,value:cum};});
+      return {label:dep,color:STAGE_COLORS[i%STAGE_COLORS.length],pts};
+    });
+  }
+
+  const W=760,H=220,padL=34,padR=12,padT=14,padB=28;
+  const plotW=W-padL-padR, plotH=H-padT-padB;
+  const maxVal=Math.max(1,...series.flatMap(s=>s.pts.map(p=>p.value)));
+  const xFor=(i)=>padL+(allDates.length>1?(i/(allDates.length-1))*plotW:plotW/2);
+  const yFor=(v)=>padT+plotH-(v/maxVal)*plotH;
+
+  // Show up to ~6 evenly-spaced date labels on the X axis
+  const labelCount=Math.min(6,allDates.length);
+  const labelIdxs=Array.from(new Set(Array.from({length:labelCount},(_,i)=>Math.round(i*(allDates.length-1)/Math.max(labelCount-1,1)))));
+
+  const pillStyle=(active)=>({padding:"5px 12px",borderRadius:8,border:"none",fontSize:11,fontWeight:600,cursor:"pointer",background:active?ACCENT:"#F2F2F7",color:active?"#fff":"#3A3A3C",fontFamily:FONT});
+
+  return(
+    <div>
+      <div style={{display:"flex",justifyContent:"flex-end",gap:6,marginBottom:10}}>
+        <button className="spring-btn" style={pillStyle(mode==="geral")} onClick={()=>setMode("geral")}>Geral</button>
+        <button className="spring-btn" style={pillStyle(mode==="deposito")} onClick={()=>setMode("deposito")}>Por Depósito</button>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",height:"auto",overflow:"visible"}}>
+        {/* Horizontal gridlines + Y labels */}
+        {[0,0.5,1].map((f,i)=>{
+          const y=padT+plotH-f*plotH;
+          return(
+            <g key={i}>
+              <line x1={padL} y1={y} x2={W-padR} y2={y} stroke="#F2F2F7" strokeWidth={1}/>
+              <text x={padL-6} y={y+3} textAnchor="end" style={{fontSize:9,fill:"#8E8E93"}}>{Math.round(maxVal*f)}</text>
+            </g>
+          );
+        })}
+        {/* X labels */}
+        {labelIdxs.map(i=>(
+          <text key={i} x={xFor(i)} y={H-8} textAnchor="middle" style={{fontSize:9,fill:"#8E8E93"}}>
+            {new Date(allDates[i]).toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"})}
+          </text>
+        ))}
+        {/* Series lines */}
+        {series.map((s,si)=>{
+          const points=s.pts.map((p,i)=>`${xFor(i)},${yFor(p.value)}`).join(" ");
+          return <polyline key={si} points={points} fill="none" stroke={s.color} strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round"/>;
+        })}
+        {/* Last-point dots */}
+        {series.map((s,si)=>{
+          const last=s.pts[s.pts.length-1];
+          const i=s.pts.length-1;
+          return <circle key={si} cx={xFor(i)} cy={yFor(last.value)} r={3.5} fill={s.color}/>;
+        })}
+      </svg>
+      {/* Legend */}
+      <div style={{display:"flex",flexWrap:"wrap",gap:14,marginTop:10}}>
+        {series.map((s,i)=>(
+          <div key={i} style={{display:"flex",alignItems:"center",gap:6}}>
+            <span style={{width:9,height:9,borderRadius:"50%",background:s.color,display:"inline-block"}}/>
+            <span style={{fontSize:11,fontWeight:600,color:"#3A3A3C"}}>{s.label}</span>
+            <span style={{fontSize:11,fontWeight:800,color:s.color}}>{s.pts[s.pts.length-1].value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // DASHBOARD
 // ─────────────────────────────────────────────────────────────────────────────
 function Dashboard({stageData,historyRows,onSelectStage}){
@@ -1097,7 +1238,7 @@ function Dashboard({stageData,historyRows,onSelectStage}){
   }
 
   // ─ Timing stats ─
-  const {stageAvg,deptAvg}=computeTimingStats(stageData,historyRows);
+  const {stageAvg}=computeTimingStats(stageData,historyRows);
 
   const kpis=[
     {label:"Total Bloqueado",  value:total,     color:"#FF453A", icon:AlertTriangle},
@@ -1106,7 +1247,7 @@ function Dashboard({stageData,historyRows,onSelectStage}){
     {label:"Pend. Execução",   value:pendExec,  color:"#8E8E93", icon:CheckCircle2, sid:8},
   ];
 
-  const hasTimingData=Object.keys(stageAvg).length>0||Object.keys(deptAvg).length>0;
+  const hasTimingData=Object.keys(stageAvg).length>0;
   const card = {background:SURFACE, borderRadius:16, padding:"16px", boxShadow:"0 1px 6px rgba(0,0,0,0.04)"};
   const now = new Date();
 
@@ -1136,8 +1277,10 @@ function Dashboard({stageData,historyRows,onSelectStage}){
         })}
       </div>
 
-      {/* Funil do Processo — full-width executive funnel chart */}
-      <div style={{...card,marginBottom:20}}>
+      {/* Funil do Processo (60%) + Tempo médio por etapa (40%), lado a lado */}
+      <div style={{display:"grid",gridTemplateColumns:"3fr 2fr",gap:16,marginBottom:20,alignItems:"start"}}>
+      {/* Funil do Processo */}
+      <div style={card}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8,marginBottom:14}}>
           <SectionHeader icon={BarChart3} title="Funil do Processo" color={ACCENT}/>
           {selectedStage!=null&&(
@@ -1168,6 +1311,41 @@ function Dashboard({stageData,historyRows,onSelectStage}){
         </div>
       </div>
 
+      {/* Tempo médio por etapa — só "Por etapa" (40%) */}
+      <div style={card}>
+        <SectionHeader icon={Clock} title="Tempo médio por etapa" color="#34C759"/>
+        {!hasTimingData?(
+          <div style={{fontSize:13,color:"#8E8E93",textAlign:"center",padding:"12px 0"}}>
+            Dados de tempo disponíveis após os primeiros tubos avançarem entre etapas
+          </div>
+        ):(
+          <div>
+            {STAGES.filter(s=>stageAvg[s.id]).map((stage,idx)=>{
+              const ms=stageAvg[stage.id];
+              const color=STAGE_COLORS[idx];
+              const allMs=Object.values(stageAvg).filter(Boolean);
+              const maxMs=Math.max(...allMs,1);
+              const pct=Math.round(ms/maxMs*100);
+              return(
+                <div key={stage.id} style={{marginBottom:10}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                    <div style={{fontSize:11,fontWeight:600,color:"#3A3A3C",display:"flex",alignItems:"center",gap:6}}>
+                      <span style={{width:8,height:8,borderRadius:"50%",background:color,display:"inline-block",flexShrink:0}}></span>
+                      E{stage.id} · {stage.short}
+                    </div>
+                    <span style={{fontSize:12,fontWeight:800,color}}>{formatDuration(ms)}</span>
+                  </div>
+                  <div style={{height:7,background:"#F2F2F7",borderRadius:4,overflow:"hidden"}}>
+                    <div style={{width:`${pct}%`,height:"100%",background:color,borderRadius:4,transition:`width 0.6s ${EASE}`}}/>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+      </div>
+
       {/* Pendências por Departamento (left) + Bloqueio por Depósito (right) */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:20,alignItems:"start"}}>
         <div style={card}>
@@ -1181,75 +1359,38 @@ function Dashboard({stageData,historyRows,onSelectStage}){
 
         <div style={card}>
           <SectionHeader icon={Package} title={selectedStage!=null?`Bloqueio por Depósito · E${selectedStage}`:"Bloqueio por Depósito"} color="#FF9F0A"/>
-          {!Object.keys(byDep).length?<div style={{fontSize:12,color:"#8E8E93"}}>Nenhum tubo</div>:Object.entries(byDep).sort((a,b)=>b[1]-a[1]).map(([dep,cnt],i)=>{
-            const clrs=STAGE_COLORS;
-            const col=clrs[i%clrs.length];
+          {!Object.keys(byDep).length?<div style={{fontSize:12,color:"#8E8E93"}}>Nenhum tubo</div>:(()=>{
+            const entries=Object.entries(byDep).sort((a,b)=>b[1]-a[1]);
             const fTotal=filteredRows.length||1;
-            const pct=Math.round(cnt/fTotal*100);
-            return(<div key={dep} style={{marginBottom:11}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}><span style={{fontSize:11,fontWeight:600,color:"#3A3A3C"}}>{dep}</span><span style={{fontSize:12,fontWeight:800,color:col}}>{cnt}</span></div><div style={{height:6,background:"#F2F2F7",borderRadius:3,overflow:"hidden"}}><div style={{width:`${pct}%`,height:"100%",background:col,borderRadius:3,transition:`width 0.6s ${EASE}`}}/></div></div>);
-          })}
+            const donutData=entries.map(([dep,cnt],i)=>({label:dep,value:cnt,color:STAGE_COLORS[i%STAGE_COLORS.length]}));
+            return(
+              <div style={{display:"flex",alignItems:"center",gap:20,flexWrap:"wrap"}}>
+                <DonutChart data={donutData}/>
+                <div style={{flex:1,minWidth:140}}>
+                  {entries.map(([dep,cnt],i)=>{
+                    const col=STAGE_COLORS[i%STAGE_COLORS.length];
+                    const pct=Math.round(cnt/fTotal*100);
+                    return(
+                      <div key={dep} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,marginBottom:7}}>
+                        <div style={{display:"flex",alignItems:"center",gap:7,minWidth:0}}>
+                          <span style={{width:9,height:9,borderRadius:3,background:col,display:"inline-block",flexShrink:0}}/>
+                          <span style={{fontSize:11,fontWeight:600,color:"#3A3A3C",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{dep}</span>
+                        </div>
+                        <span style={{fontSize:11,color:"#8E8E93",flexShrink:0}}><b style={{color:col,fontSize:12}}>{cnt}</b> ({pct}%)</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       </div>
 
-      {/* Tempo médio por etapa — full width, split per stage / per department */}
+      {/* Bloqueio Acumulado por Dia — Geral / Por Depósito */}
       <div style={{...card,marginBottom:20}}>
-        <SectionHeader icon={Clock} title="Tempo médio por etapa" color="#34C759"/>
-        {!hasTimingData?(
-          <div style={{fontSize:13,color:"#8E8E93",textAlign:"center",padding:"12px 0"}}>
-            Dados de tempo disponíveis após os primeiros tubos avançarem entre etapas
-          </div>
-        ):(
-          <div style={{display:"grid",gridTemplateColumns:Object.keys(deptAvg).length>0?"1fr 1fr":"1fr",gap:24}}>
-            {/* Per-stage bar chart */}
-            <div>
-              <div style={{fontSize:12,fontWeight:700,color:"#3A3A3C",marginBottom:10}}>Por etapa</div>
-              {STAGES.filter(s=>stageAvg[s.id]).map((stage,idx)=>{
-                const ms=stageAvg[stage.id];
-                const color=STAGE_COLORS[idx];
-                const allMs=Object.values(stageAvg).filter(Boolean);
-                const maxMs=Math.max(...allMs,1);
-                const pct=Math.round(ms/maxMs*100);
-                return(
-                  <div key={stage.id} style={{marginBottom:10}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-                      <div style={{fontSize:11,fontWeight:600,color:"#3A3A3C",display:"flex",alignItems:"center",gap:6}}>
-                        <span style={{width:8,height:8,borderRadius:"50%",background:color,display:"inline-block",flexShrink:0}}></span>
-                        E{stage.id} · {stage.short}
-                      </div>
-                      <span style={{fontSize:12,fontWeight:800,color}}>{formatDuration(ms)}</span>
-                    </div>
-                    <div style={{height:7,background:"#F2F2F7",borderRadius:4,overflow:"hidden"}}>
-                      <div style={{width:`${pct}%`,height:"100%",background:color,borderRadius:4,transition:`width 0.6s ${EASE}`}}/>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            {/* Per-dept */}
-            {Object.keys(deptAvg).length>0&&(
-              <div>
-                <div style={{fontSize:12,fontWeight:700,color:"#3A3A3C",marginBottom:10}}>Por departamento</div>
-                {Object.entries(deptAvg).map(([dept,ms])=>{
-                  const c=DEPT_COLORS[dept]||{bg:"#F2F2F7",fg:"#3A3A3C"};
-                  const allMs=Object.values(deptAvg).filter(Boolean);
-                  const maxMs=Math.max(...allMs,1);
-                  const pct=Math.round(ms/maxMs*100);
-                  return(
-                    <div key={dept} style={{marginBottom:10}}>
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-                        <span style={{fontSize:11,fontWeight:600,color:"#3A3A3C"}}>{DEPT_FULL[dept]||dept}</span>
-                        <span style={{fontSize:12,fontWeight:800,color:c.fg}}>{formatDuration(ms)}</span>
-                      </div>
-                      <div style={{height:7,background:"#F2F2F7",borderRadius:4,overflow:"hidden"}}>
-                        <div style={{width:`${pct}%`,height:"100%",background:c.fg,borderRadius:4,transition:`width 0.6s ${EASE}`}}/>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
+        <SectionHeader icon={TrendingUp} title="Bloqueio Acumulado por Dia" color="#5E5CE6"/>
+        <AccumulatedBlockChart rows={allActive}/>
       </div>
 
       {/* Motivos de Bloqueio — Pareto (80% acumulado) */}
@@ -1326,7 +1467,7 @@ function Dashboard({stageData,historyRows,onSelectStage}){
               <tbody>
                 {pedidoItemRows.map((r,i)=>(
                   <tr key={`${r.pedido}|${r.item}|${i}`} style={{background:i%2?"#FAFAFB":"#fff"}}>
-                    <td style={{...TD(i%2===1),fontWeight:700,color:"#1C1C1E"}}>{r.pedido||"—"}</td>
+                    <td style={{...TD(i%2===1),color:"#1C1C1E"}}>{r.pedido||"—"}</td>
                     <td style={TD(i%2===1)}>{r.item||"—"}</td>
                     <td style={TD(i%2===1)}>{r.descricao||"—"}</td>
                     <td style={TD(i%2===1)}><span style={{background:"#E8F4FD",color:"#1A6FA8",borderRadius:6,padding:"2px 8px",fontSize:11,fontWeight:700}}>{r.tubos}</span></td>
@@ -1574,7 +1715,7 @@ function ConfigPage({users,setUsers,faturamento,setFaturamento,stageData}){
                     <td style={TD(i%2===1)}>
                       <div style={{display:"flex",gap:6}}>
                         <Btn small variant="secondary" icon={Pencil} onClick={()=>openEdit(u)}>Editar</Btn>
-                        <Btn small variant="danger" icon={Trash2} onClick={()=>setShowDel(u.id)}>Excluir</Btn>
+                        <Btn small variant="delete" icon={Trash2} onClick={()=>setShowDel(u.id)}>Excluir</Btn>
                       </div>
                     </td>
                   </tr>
@@ -1641,7 +1782,7 @@ function ConfigPage({users,setUsers,faturamento,setFaturamento,stageData}){
                     <td style={{...TD(i%2===1),fontWeight:700,color:"#1C1C1E"}}>{f.pedido}/{f.item}</td>
                     <td style={{...TD(i%2===1),color:"#555"}}>{f.descricao||"—"}</td>
                     <td style={TD(i%2===1)}><span style={{background:"#E8F4FD",color:"#1A6FA8",borderRadius:6,padding:"2px 8px",fontSize:11,fontWeight:700}}>{countTubos(f.pedido,f.item)}</span></td>
-                    <td style={TD(i%2===1)}><Btn small variant="danger" icon={Trash2} onClick={()=>removeFaturamento(f.id)}>Excluir</Btn></td>
+                    <td style={TD(i%2===1)}><Btn small variant="delete" icon={Trash2} onClick={()=>removeFaturamento(f.id)}>Excluir</Btn></td>
                   </tr>
                 ))}
               </tbody>
