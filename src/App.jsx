@@ -1080,60 +1080,74 @@ function DonutChart({data,size=150,thickness=24}){
 // ─────────────────────────────────────────────────────────────────────────────
 // BLOQUEIO ACUMULADO POR DIA — line chart with "Geral" / "Por Depósito" toggle
 // ─────────────────────────────────────────────────────────────────────────────
+const MONTH_ABBR=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+
 function AccumulatedBlockChart({rows}){
   const [mode,setMode]=useState("geral");
 
-  const dated=rows.map(r=>({...r,_d:parseDateBR(r.data_bloqueio)})).filter(r=>r._d);
-  const allDates=Array.from(new Set(dated.map(r=>r._d.getTime()))).sort((a,b)=>a-b);
+  const now=new Date();
+  const curY=now.getFullYear(), curM=now.getMonth();
+  const daysInMonth=new Date(curY,curM+1,0).getDate();
 
-  if(allDates.length===0){
+  const dated=rows
+    .map(r=>({...r,_d:parseDateBR(r.data_bloqueio)}))
+    .filter(r=>r._d && r._d.getFullYear()===curY && r._d.getMonth()===curM);
+
+  const monthLabel=`${MONTH_ABBR[curM]}/${String(curY).slice(2)}`;
+
+  if(dated.length===0){
     return(
       <div style={{fontSize:13,color:"#8E8E93",textAlign:"center",padding:"12px 0"}}>
-        Nenhuma data de bloqueio registrada para exibir o acumulado
+        Nenhum bloqueio registrado em {monthLabel}
       </div>
     );
   }
 
-  let series=[]; // [{label,color,pts:[{t,value}]}]
+  const days=Array.from({length:daysInMonth},(_,i)=>i+1);
+
+  let series=[]; // [{label,color,values:[cumulativo por dia]}]
   if(mode==="geral"){
     const counts={};
-    dated.forEach(r=>{const t=r._d.getTime();counts[t]=(counts[t]||0)+1;});
+    dated.forEach(r=>{const d=r._d.getDate();counts[d]=(counts[d]||0)+1;});
     let cum=0;
-    const pts=allDates.map(t=>{cum+=counts[t]||0;return{t,value:cum};});
-    series=[{label:"Total",color:ACCENT,pts}];
+    const values=days.map(d=>{cum+=counts[d]||0;return cum;});
+    series=[{label:"Total",color:ACCENT,values}];
   } else {
     const depGroups={};
     dated.forEach(r=>{
       const dep=r.deposito_sap||"Sem Depósito";
       if(!depGroups[dep]) depGroups[dep]={};
-      const t=r._d.getTime();
-      depGroups[dep][t]=(depGroups[dep][t]||0)+1;
+      const d=r._d.getDate();
+      depGroups[dep][d]=(depGroups[dep][d]||0)+1;
     });
-    const depTotals=Object.entries(depGroups).map(([dep,counts])=>[dep,Object.values(counts).reduce((a,b)=>a+b,0)]).sort((a,b)=>b[1]-a[1]);
+    const depTotals=Object.entries(depGroups).map(([dep,c])=>[dep,Object.values(c).reduce((a,b)=>a+b,0)]).sort((a,b)=>b[1]-a[1]);
     series=depTotals.slice(0,6).map(([dep],i)=>{
       let cum=0;
-      const pts=allDates.map(t=>{cum+=depGroups[dep][t]||0;return{t,value:cum};});
-      return {label:dep,color:STAGE_COLORS[i%STAGE_COLORS.length],pts};
+      const values=days.map(d=>{cum+=depGroups[dep][d]||0;return cum;});
+      return {label:dep,color:STAGE_COLORS[i%STAGE_COLORS.length],values};
     });
   }
 
-  const W=760,H=220,padL=34,padR=12,padT=14,padB=28;
+  // Stacking the per-series cumulative values reproduces the overall cumulative total
+  const totals=days.map((_,i)=>series.reduce((s,ser)=>s+ser.values[i],0));
+  const maxVal=Math.max(1,...totals);
+
+  const W=380,H=240,padL=28,padR=8,padT=14,padB=24;
   const plotW=W-padL-padR, plotH=H-padT-padB;
-  const maxVal=Math.max(1,...series.flatMap(s=>s.pts.map(p=>p.value)));
-  const xFor=(i)=>padL+(allDates.length>1?(i/(allDates.length-1))*plotW:plotW/2);
-  const yFor=(v)=>padT+plotH-(v/maxVal)*plotH;
+  const slot=plotW/days.length;
+  const barW=Math.max(2,slot-2);
 
-  // Show up to ~6 evenly-spaced date labels on the X axis
-  const labelCount=Math.min(6,allDates.length);
-  const labelIdxs=Array.from(new Set(Array.from({length:labelCount},(_,i)=>Math.round(i*(allDates.length-1)/Math.max(labelCount-1,1)))));
-
+  const labelStep=Math.ceil(days.length/7);
   const pillStyle=(active)=>({padding:"5px 12px",borderRadius:8,border:"none",fontSize:11,fontWeight:600,cursor:"pointer",background:active?ACCENT:"#F2F2F7",color:active?"#fff":"#3A3A3C",fontFamily:FONT});
 
   return(
     <div>
-      <div style={{display:"flex",justifyContent:"flex-end",gap:6,marginBottom:10}}>
-        <button className="spring-btn" style={pillStyle(mode==="geral")} onClick={()=>setMode("geral")}>Geral</button>
-        <button className="spring-btn" style={pillStyle(mode==="deposito")} onClick={()=>setMode("deposito")}>Por Depósito</button>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:6,marginBottom:10}}>
+        <span style={{fontSize:11,color:"#8E8E93",fontWeight:600}}>{monthLabel}</span>
+        <div style={{display:"flex",gap:6}}>
+          <button className="spring-btn" style={pillStyle(mode==="geral")} onClick={()=>setMode("geral")}>Geral</button>
+          <button className="spring-btn" style={pillStyle(mode==="deposito")} onClick={()=>setMode("deposito")}>Por Depósito</button>
+        </div>
       </div>
       <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",height:"auto",overflow:"visible"}}>
         {/* Horizontal gridlines + Y labels */}
@@ -1142,39 +1156,102 @@ function AccumulatedBlockChart({rows}){
           return(
             <g key={i}>
               <line x1={padL} y1={y} x2={W-padR} y2={y} stroke="#F2F2F7" strokeWidth={1}/>
-              <text x={padL-6} y={y+3} textAnchor="end" style={{fontSize:9,fill:"#8E8E93"}}>{Math.round(maxVal*f)}</text>
+              <text x={padL-5} y={y+3} textAnchor="end" style={{fontSize:9,fill:"#8E8E93"}}>{Math.round(maxVal*f)}</text>
+            </g>
+          );
+        })}
+        {/* Stacked bars per day */}
+        {days.map((d,i)=>{
+          const x=padL+i*slot+(slot-barW)/2;
+          let yBottom=padT+plotH;
+          return(
+            <g key={d}>
+              {series.map((ser,si)=>{
+                const val=ser.values[i];
+                const h=(val/maxVal)*plotH;
+                const y=yBottom-h;
+                yBottom=y;
+                return <rect key={si} x={x} y={y} width={barW} height={Math.max(h,0)} fill={ser.color}/>;
+              })}
             </g>
           );
         })}
         {/* X labels */}
-        {labelIdxs.map(i=>(
-          <text key={i} x={xFor(i)} y={H-8} textAnchor="middle" style={{fontSize:9,fill:"#8E8E93"}}>
-            {new Date(allDates[i]).toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"})}
-          </text>
+        {days.filter(d=>d===1||d%labelStep===0||d===days.length).map(d=>(
+          <text key={d} x={padL+(d-1)*slot+slot/2} y={H-8} textAnchor="middle" style={{fontSize:9,fill:"#8E8E93"}}>{d}</text>
         ))}
-        {/* Series lines */}
-        {series.map((s,si)=>{
-          const points=s.pts.map((p,i)=>`${xFor(i)},${yFor(p.value)}`).join(" ");
-          return <polyline key={si} points={points} fill="none" stroke={s.color} strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round"/>;
-        })}
-        {/* Last-point dots */}
-        {series.map((s,si)=>{
-          const last=s.pts[s.pts.length-1];
-          const i=s.pts.length-1;
-          return <circle key={si} cx={xFor(i)} cy={yFor(last.value)} r={3.5} fill={s.color}/>;
-        })}
       </svg>
       {/* Legend */}
       <div style={{display:"flex",flexWrap:"wrap",gap:14,marginTop:10}}>
         {series.map((s,i)=>(
           <div key={i} style={{display:"flex",alignItems:"center",gap:6}}>
-            <span style={{width:9,height:9,borderRadius:"50%",background:s.color,display:"inline-block"}}/>
+            <span style={{width:9,height:9,borderRadius:3,background:s.color,display:"inline-block"}}/>
             <span style={{fontSize:11,fontWeight:600,color:"#3A3A3C"}}>{s.label}</span>
-            <span style={{fontSize:11,fontWeight:800,color:s.color}}>{s.pts[s.pts.length-1].value}</span>
+            <span style={{fontSize:11,fontWeight:800,color:s.color}}>{s.values[s.values.length-1]}</span>
           </div>
         ))}
       </div>
     </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BLOQUEIO MÊS A MÊS — vertical bar chart, one bar per month
+// ─────────────────────────────────────────────────────────────────────────────
+function MonthlyBlockChart({rows}){
+  const dated=rows.map(r=>({...r,_d:parseDateBR(r.data_bloqueio)})).filter(r=>r._d);
+
+  if(dated.length===0){
+    return(
+      <div style={{fontSize:13,color:"#8E8E93",textAlign:"center",padding:"12px 0"}}>
+        Nenhuma data de bloqueio registrada
+      </div>
+    );
+  }
+
+  const counts={}; // "YYYY-MM" -> count
+  dated.forEach(r=>{
+    const key=`${r._d.getFullYear()}-${String(r._d.getMonth()+1).padStart(2,"0")}`;
+    counts[key]=(counts[key]||0)+1;
+  });
+  const months=Object.keys(counts).sort();
+  const maxVal=Math.max(1,...months.map(m=>counts[m]));
+
+  const W=380,H=240,padL=28,padR=8,padT=22,padB=24;
+  const plotW=W-padL-padR, plotH=H-padT-padB;
+  const slot=plotW/months.length;
+  const barW=Math.max(8,Math.min(36,slot-10));
+
+  return(
+    <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",height:"auto",overflow:"visible"}}>
+      {/* Horizontal gridlines + Y labels */}
+      {[0,0.5,1].map((f,i)=>{
+        const y=padT+plotH-f*plotH;
+        return(
+          <g key={i}>
+            <line x1={padL} y1={y} x2={W-padR} y2={y} stroke="#F2F2F7" strokeWidth={1}/>
+            <text x={padL-5} y={y+3} textAnchor="end" style={{fontSize:9,fill:"#8E8E93"}}>{Math.round(maxVal*f)}</text>
+          </g>
+        );
+      })}
+      {/* Bars */}
+      {months.map((m,i)=>{
+        const val=counts[m];
+        const h=(val/maxVal)*plotH;
+        const x=padL+i*slot+(slot-barW)/2;
+        const y=padT+plotH-h;
+        const [yy,mm]=m.split("-");
+        const label=`${MONTH_ABBR[Number(mm)-1]}/${yy.slice(2)}`;
+        const color=STAGE_COLORS[i%STAGE_COLORS.length];
+        return(
+          <g key={m}>
+            <rect x={x} y={y} width={barW} height={Math.max(h,0)} fill={color} rx={3}/>
+            <text x={x+barW/2} y={y-5} textAnchor="middle" style={{fontSize:10,fontWeight:800,fill:"#3A3A3C"}}>{val}</text>
+            <text x={x+barW/2} y={H-8} textAnchor="middle" style={{fontSize:9,fill:"#8E8E93"}}>{label}</text>
+          </g>
+        );
+      })}
+    </svg>
   );
 }
 
@@ -1387,10 +1464,16 @@ function Dashboard({stageData,historyRows,onSelectStage}){
         </div>
       </div>
 
-      {/* Bloqueio Acumulado por Dia — Geral / Por Depósito */}
-      <div style={{...card,marginBottom:20}}>
-        <SectionHeader icon={TrendingUp} title="Bloqueio Acumulado por Dia" color="#5E5CE6"/>
-        <AccumulatedBlockChart rows={allActive}/>
+      {/* Bloqueio Acumulado por Dia (50%) + Bloqueio Mês a Mês (50%) */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:20,alignItems:"start"}}>
+        <div style={card}>
+          <SectionHeader icon={TrendingUp} title="Bloqueio Acumulado por Dia" color="#5E5CE6"/>
+          <AccumulatedBlockChart rows={allActive}/>
+        </div>
+        <div style={card}>
+          <SectionHeader icon={BarChart3} title="Bloqueio Mês a Mês" color="#FF9F0A"/>
+          <MonthlyBlockChart rows={allActive}/>
+        </div>
       </div>
 
       {/* Motivos de Bloqueio — Pareto (80% acumulado) */}
