@@ -450,7 +450,7 @@ function LoginPage({onLogin,users}){
         <div style={{textAlign:"center",marginBottom:30}}>
           <div style={{display:"flex",justifyContent:"center",marginBottom:16}}><BrandIcon size={60} radius={18}/></div>
           <div style={{display:"flex",justifyContent:"center"}}><BrandWordmark size={28}/></div>
-          <div style={{fontSize:13,color:"#8E8E93",marginTop:6}}>Fluxo de Liberação · Gestão de Pipeline</div>
+          <div style={{fontSize:13,color:"#8E8E93",marginTop:6}}>Controle da Qualidade · Gerenciamento de tubos bloqueados</div>
         </div>
         {err&&<div style={{color:"#FF453A",fontSize:13,textAlign:"center",background:"#FFF2F0",borderRadius:10,padding:"8px 12px",marginBottom:12}}>{err}</div>}
         <div style={{marginBottom:14}}><label style={{fontSize:13,fontWeight:600,color:"#3A3A3C",marginBottom:6,display:"block"}}>E-mail</label><input style={INP} type="email" placeholder="seu@empresa.com" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&go()} autoFocus/></div>
